@@ -1074,7 +1074,7 @@ export default function ResultPage() {
                     </div>
 
                     {/* Listen to Description Button */}
-                    {/* {scan.audio_url && (
+                    {scan.audio_url && (
                       <div className="mt-6 pt-4 border-t border-white/20">
                         <div className="flex items-center justify-between">
                           <motion.div
@@ -1125,78 +1125,7 @@ export default function ResultPage() {
                           Listen to an AI-narrated description of this artwork
                         </p>
                       </div>
-                    )} */}
-                    <div className="mt-6 pt-4 border-t border-white/20">
-                      <div className="flex items-center justify-between">
-                        {scan.audio_url ? (
-                          <motion.div
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <Button
-                              onClick={handlePlayDescription}
-                              disabled={isLoggingOut}
-                              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-                            >
-                              {currentTrack?.type === "description" &&
-                              isPlaying ? (
-                                <>
-                                  <Pause className="h-4 w-4 mr-2" />
-                                  Pause
-                                </>
-                              ) : (
-                                <>
-                                  <Volume2 className="h-4 w-4 mr-2" />
-                                  Listen
-                                </>
-                              )}
-                            </Button>
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5 }}
-                          >
-                            <Button
-                              disabled
-                              className="bg-white/10 border border-white/20 text-white flex items-center space-x-2 rounded-full px-6 py-3 shadow-md backdrop-blur-md"
-                            >
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              <span className="text-sm font-medium">
-                                Generating audio...
-                              </span>
-                            </Button>
-                          </motion.div>
-                        )}
-
-                        {scan.audio_url &&
-                          currentTrack?.type === "description" &&
-                          isPlaying && (
-                            <motion.div
-                              className="flex items-center space-x-2 text-sm text-emerald-400"
-                              initial={{ opacity: 0, x: 20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 20 }}
-                            >
-                              <VoiceWaveAnimation
-                                isListening={true}
-                                isProcessing={false}
-                                className="h-4"
-                              />
-                              <span className="font-medium">
-                                Playing description...
-                              </span>
-                            </motion.div>
-                          )}
-                      </div>
-
-                      <p className="text-xs text-gray-400 mt-2">
-                        {scan.audio_url
-                          ? "Listen to an AI-narrated description of this artwork"
-                          : "Please wait while the audio is being generated"}
-                      </p>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
