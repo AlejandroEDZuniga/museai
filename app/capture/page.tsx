@@ -251,58 +251,124 @@ export default function CapturePage() {
     }
   };
 
+  // const analyzeImage = async () => {
+  //   if (!capturedImage || !user) return;
+
+  //   setIsLoading(true);
+
+  //   try {
+  //     // Get current session token
+  //     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+  //     if (sessionError || !session?.access_token) {
+  //       throw new Error("Invalid session or missing token");
+  //     }
+
+  //     const base64Data = capturedImage.split(',')[1];
+
+  //     const response = await fetch('/api/describe', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': `Bearer ${session.access_token}`,
+  //       },
+  //       body: JSON.stringify({
+  //         image: base64Data,
+  //         language: 'en',
+  //         location: localStorage.getItem('userLocation') || undefined,
+  //       }),
+  //     });
+
+      
+
+      
+
+  //     if (!response.ok) {
+  //       const err = await response.json();
+  //       throw new Error(err?.error || 'Server response failed');
+  //     }
+
+  //     const result = await response.json();
+      
+  //     toast.success('Analysis complete! Redirecting to results...');
+      
+  //     setTimeout(() => {
+  //       router.push(`/result?scanId=${result.scanId}`);
+  //     }, 1000);
+      
+  //   } catch (err: any) {
+  //     console.error('❌ Analysis error:', err);
+  //     toast.error(err.message || 'Failed to analyze image. Please try again.');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const analyzeImage = async () => {
-    if (!capturedImage || !user) return;
+  if (!capturedImage || !user) return;
 
-    setIsLoading(true);
+  setIsLoading(true);
 
-    try {
-      // Get current session token
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-      if (sessionError || !session?.access_token) {
-        throw new Error("Invalid session or missing token");
-      }
-
-      const base64Data = capturedImage.split(',')[1];
-
-      const response = await fetch('/api/describe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          image: base64Data,
-          language: 'en',
-          location: localStorage.getItem('userLocation') || undefined,
-        }),
-      });
-
-      
-
-      
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err?.error || 'Server response failed');
-      }
-
-      const result = await response.json();
-      
-      toast.success('Analysis complete! Redirecting to results...');
-      
-      setTimeout(() => {
-        router.push(`/result?scanId=${result.scanId}`);
-      }, 1000);
-      
-    } catch (err: any) {
-      console.error('❌ Analysis error:', err);
-      toast.error(err.message || 'Failed to analyze image. Please try again.');
-    } finally {
-      setIsLoading(false);
+    if (sessionError || !session?.access_token) {
+      throw new Error("Invalid session or missing token");
     }
-  };
+
+    const base64Data = capturedImage.split(',')[1];
+
+    // 1. Llamada al endpoint de análisis
+    const response = await fetch('/api/describe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        image: base64Data,
+        language: 'en',
+        location: localStorage.getItem('userLocation') || undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err?.error || 'Server response failed');
+    }
+
+    const result = await response.json();
+
+    // 2. Llamada en segundo plano al endpoint de generación de audio
+    fetch('/api/generate-audio', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        scanId: result.scanId,
+        description: result.description,
+        language: 'en',
+      }),
+    }).catch((err) => {
+      console.error('⚠️ Error generating audio:', err);
+    });
+
+    // 3. Redireccionar inmediatamente al resultado
+    toast.success('Analysis complete! Redirecting to results...');
+
+    setTimeout(() => {
+      router.push(`/result?scanId=${result.scanId}`);
+    }, 1000);
+
+  } catch (err: any) {
+    console.error('❌ Analysis error:', err);
+    toast.error(err.message || 'Failed to analyze image. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const resetCapture = () => {
     setCapturedImage('');
