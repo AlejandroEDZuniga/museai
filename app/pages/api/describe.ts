@@ -101,21 +101,19 @@
 //   }
 // }
 
-
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { createClient } from '@/lib/server';
 import { analyzeArtwork } from '@/lib/openai';
 import { generateSpeech } from '@/lib/elevenlabs';
 import { analyzeImageSchema } from '@/lib/validation';
-import { createClientPages } from '@/lib/server';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const supabase = createClientPages(req, res);
-
+    const supabase = createClient(req, res);
     const {
       data: { user },
       error,

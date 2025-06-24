@@ -25,25 +25,30 @@
 //   );
 // }
 
-
-// lib/server.ts
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-export function createSupabaseClientWithToken(token?: string) {
-  return createClient(
+import { parse, serialize } from 'cookie';
+
+export function createClient(req: NextApiRequest, res: NextApiResponse) {
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      global: {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      cookies: {
+        get(name: string) {
+          const cookies = parse(req.headers.cookie || '');
+          return cookies[name];
+        },
+        set(name: string, value: string, options?: any) {
+          const cookie = serialize(name, value, options);
+          res.setHeader('Set-Cookie', cookie);
+        },
+        remove(name: string, options?: any) {
+          const cookie = serialize(name, '', { ...options, maxAge: -1 });
+          res.setHeader('Set-Cookie', cookie);
+        },
       },
     }
   );
-}
-
-export function createClientPages(req: NextApiRequest, res: NextApiResponse) {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(" ")[1];
-  return createSupabaseClientWithToken(token);
 }
