@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { Camera, Upload, Volume2, Sparkles, ArrowRight, MessageCircle, Mic, Zap } from "lucide-react"
 import { motion } from "framer-motion"
+import { easeInOut } from "framer-motion";
+
 import Image from "next/image"
 
 export default function AboutSection() {
@@ -92,7 +94,7 @@ export default function AboutSection() {
       transition: {
         duration: 6,
         repeat: Infinity,
-        ease: "easeInOut",
+        ease: easeInOut,
       },
     },
   }
