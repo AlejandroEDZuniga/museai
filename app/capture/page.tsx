@@ -265,9 +265,8 @@ export default function CapturePage() {
       }
 
       const base64Data = capturedImage.split(',')[1];
-      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/describe`, {
 
-      // const response = await fetch('/api/describe', {
+      const response = await fetch('/api/describe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
