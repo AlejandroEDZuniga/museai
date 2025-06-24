@@ -27,10 +27,11 @@
 
 import { createServerClient } from '@supabase/ssr';
 import type { NextApiRequest, NextApiResponse } from 'next';
-
 import { parse, serialize } from 'cookie';
 
 export function createClient(req: NextApiRequest, res: NextApiResponse) {
+  const token = req.headers.authorization?.replace('Bearer ', '') || null;
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -48,6 +49,9 @@ export function createClient(req: NextApiRequest, res: NextApiResponse) {
           const cookie = serialize(name, '', { ...options, maxAge: -1 });
           res.setHeader('Set-Cookie', cookie);
         },
+      },
+      global: {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       },
     }
   );
