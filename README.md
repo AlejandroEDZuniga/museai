@@ -173,7 +173,7 @@ This project is open-source and available under the MIT License.
 
 ## 💬 Contact
 
-For issues, open a GitHub issue or reach out at \[[yourname@domain.com](mailto:yourname@domain.com)].
+For issues, open a GitHub issue or reach out at alejandroedzuniga@gmail.com
 
 ---
 
