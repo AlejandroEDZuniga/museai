@@ -21,7 +21,9 @@ import Image from 'next/image';
 export default function ResultPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const scanId = searchParams.get('scanId');
+  // const scanId = searchParams.get('scanId');
+  const scanId = searchParams?.get('scanId') ?? '';
+
 
   const [scan, setScan] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
