@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, easeInOut } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 interface VoiceWaveAnimationProps {
@@ -31,7 +31,7 @@ export default function VoiceWaveAnimation({ isListening, isProcessing, classNam
       transition: {
         duration: 0.8,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: easeInOut
       }
     },
     processing: {
@@ -40,7 +40,7 @@ export default function VoiceWaveAnimation({ isListening, isProcessing, classNam
       transition: {
         duration: 1.5,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: easeInOut
       }
     },
     idle: {
