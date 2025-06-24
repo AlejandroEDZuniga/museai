@@ -1,52 +1,70 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, MessageCircle, Play, Pause, Volume2, LogOut, Loader2, Send, Heart, Bookmark, MoreVertical, Sparkles, Zap, Mic, MicOff, Square, VolumeX, Bell } from 'lucide-react';
-import { toast } from 'sonner';
-import { formatDate } from '@/lib/utils';
-import EnhancedVoiceRecorder from '@/components/EnhancedVoiceRecorder';
-import VoiceWaveAnimation from '@/components/VoiceWaveAnimation';
-import DraggableAudioController from '@/components/DraggableAudioController';
-import { useAudioManager } from '@/hooks/useAudioManager';
-import { motion, AnimatePresence, easeInOut } from 'framer-motion';
-import Particles from 'react-tsparticles';
-import { loadSlim } from 'tsparticles-slim';
-import type { Engine } from 'tsparticles-engine';
-import Image from 'next/image';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ArrowLeft,
+  MessageCircle,
+  Play,
+  Pause,
+  Volume2,
+  LogOut,
+  Loader2,
+  Send,
+  Heart,
+  Bookmark,
+  MoreVertical,
+  Sparkles,
+  Zap,
+  Mic,
+  MicOff,
+  Square,
+  VolumeX,
+  Bell,
+} from "lucide-react";
+import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
+import EnhancedVoiceRecorder from "@/components/EnhancedVoiceRecorder";
+import VoiceWaveAnimation from "@/components/VoiceWaveAnimation";
+import DraggableAudioController from "@/components/DraggableAudioController";
+import { useAudioManager } from "@/hooks/useAudioManager";
+import { motion, AnimatePresence, easeInOut } from "framer-motion";
+import Particles from "react-tsparticles";
+import { loadSlim } from "tsparticles-slim";
+import type { Engine } from "tsparticles-engine";
+import Image from "next/image";
 
 export default function ResultPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // const scanId = searchParams.get('scanId');
-  const scanId = searchParams?.get('scanId') ?? '';
-
+  const scanId = searchParams?.get("scanId") ?? "";
 
   const [scan, setScan] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [chatMessage, setChatMessage] = useState('');
+  const [chatMessage, setChatMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
-  
+
   // Voice conversation states
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [voiceConversationActive, setVoiceConversationActive] = useState(false);
-  
+
   // New message notification
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [lastChatCount, setLastChatCount] = useState(0);
-  
+
   // Auto-play control
   const [hasAutoPlayed, setHasAutoPlayed] = useState(false);
-  
+
   // Refs for voice recording and chat container
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -65,7 +83,7 @@ export default function ResultPage() {
     resumeAudio,
     stopAudio,
     toggleMute,
-    cleanup: cleanupAudio
+    cleanup: cleanupAudio,
   } = useAudioManager();
 
   const particlesInit = useCallback(async (engine: Engine) => {
@@ -77,15 +95,49 @@ export default function ResultPage() {
       fetchScanData();
       fetchChatHistory();
     } else {
-      router.push('/dashboard');
+      router.push("/dashboard");
     }
+  }, [scanId]);
+
+  useEffect(() => {
+    if (!scanId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from("scans")
+          .select("audio_url")
+          .eq("id", scanId)
+          .single();
+
+        if (error) {
+          console.error("Polling error:", error);
+          return;
+        }
+
+        if (data?.audio_url) {
+          // Si cambia el valor, actualizamos
+          setScan((prev: any) => ({
+            ...prev,
+            audio_url: data.audio_url,
+          }));
+
+          clearInterval(interval); // Detenemos el polling
+        }
+      } catch (err) {
+        console.error("Polling fetch failed:", err);
+      }
+    }, 3000); // Cada 3 segundos
+
+    // Limpiamos el polling si el componente se desmonta
+    return () => clearInterval(interval);
   }, [scanId]);
 
   // Monitor chat history for new messages and auto-scroll
   useEffect(() => {
     if (chatHistory.length > lastChatCount && lastChatCount > 0) {
       setHasNewMessage(true);
-      
+
       // Auto-scroll to the new message after a short delay
       setTimeout(() => {
         scrollToNewMessage();
@@ -101,9 +153,9 @@ export default function ResultPage() {
         id: `description-${scan.id}`,
         url: scan.audio_url,
         title: scan.title,
-        type: 'description' as const
+        type: "description" as const,
       };
-      
+
       // Small delay to ensure UI is ready
       setTimeout(() => {
         playAudio(descriptionTrack);
@@ -117,7 +169,7 @@ export default function ResultPage() {
     return () => {
       cleanupAudio();
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
   }, [cleanupAudio]);
@@ -125,17 +177,17 @@ export default function ResultPage() {
   const fetchScanData = async () => {
     try {
       const { data, error } = await supabase
-        .from('scans')
-        .select('*')
-        .eq('id', scanId)
+        .from("scans")
+        .select("*")
+        .eq("id", scanId)
         .single();
 
       if (error) throw error;
       setScan(data);
     } catch (error) {
-      console.error('Error fetching scan:', error);
-      toast.error('Error loading artwork data');
-      router.push('/dashboard');
+      console.error("Error fetching scan:", error);
+      toast.error("Error loading artwork data");
+      router.push("/dashboard");
     } finally {
       setIsLoading(false);
     }
@@ -144,38 +196,38 @@ export default function ResultPage() {
   const fetchChatHistory = async () => {
     try {
       const { data, error } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('scan_id', scanId)
-        .order('created_at', { ascending: true });
+        .from("chat_messages")
+        .select("*")
+        .eq("scan_id", scanId)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       setChatHistory(data || []);
     } catch (error) {
-      console.error('Error fetching chat history:', error);
+      console.error("Error fetching chat history:", error);
     }
   };
 
   const handleSignOut = async () => {
     if (isLoggingOut) return;
-    
+
     setIsLoggingOut(true);
-    
+
     try {
       // Stop all audio and voice activities
       cleanupAudio();
       stopVoiceRecording();
-      
+
       // Clear local storage
       const keysToRemove = [
-        'hasSeenLocationPrompt',
-        'userLocation',
-        'userCoords',
-        'supabase.auth.token',
-        'sb-auth-token'
+        "hasSeenLocationPrompt",
+        "userLocation",
+        "userCoords",
+        "supabase.auth.token",
+        "sb-auth-token",
       ];
-      
-      keysToRemove.forEach(key => {
+
+      keysToRemove.forEach((key) => {
         try {
           localStorage.removeItem(key);
         } catch (error) {
@@ -187,29 +239,32 @@ export default function ResultPage() {
       try {
         sessionStorage.clear();
       } catch (error) {
-        console.warn('Failed to clear sessionStorage:', error);
+        console.warn("Failed to clear sessionStorage:", error);
       }
 
       // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('Supabase signOut error:', error);
-        toast.error('There was an issue signing out, but you have been logged out locally.');
-      } else {
-        toast.success('Successfully signed out. See you next time!');
-      }
-      
-      setTimeout(() => {
-        router.push('/auth');
-      }, 1000);
 
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      toast.error('An error occurred during logout, but you have been signed out.');
-      
+      if (error) {
+        console.error("Supabase signOut error:", error);
+        toast.error(
+          "There was an issue signing out, but you have been logged out locally."
+        );
+      } else {
+        toast.success("Successfully signed out. See you next time!");
+      }
+
       setTimeout(() => {
-        router.push('/auth');
+        router.push("/auth");
+      }, 1000);
+    } catch (error: any) {
+      console.error("Logout error:", error);
+      toast.error(
+        "An error occurred during logout, but you have been signed out."
+      );
+
+      setTimeout(() => {
+        router.push("/auth");
       }, 1500);
     } finally {
       setIsLoggingOut(false);
@@ -220,50 +275,53 @@ export default function ResultPage() {
     const responseTrack = {
       id: `response-${Date.now()}`,
       url: audioUrl,
-      title: responseText.substring(0, 50) + '...',
-      type: 'response' as const
+      title: responseText.substring(0, 50) + "...",
+      type: "response" as const,
     };
-    
+
     playAudio(responseTrack);
   };
 
-  const handleChatSubmit = async (message: string, isVoice: boolean = false) => {
+  const handleChatSubmit = async (
+    message: string,
+    isVoice: boolean = false
+  ) => {
     if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
 
     setIsChatLoading(true);
-    
+
     try {
       const {
         data: { session },
-        error: sessionError
+        error: sessionError,
       } = await supabase.auth.getSession();
 
       if (sessionError || !session?.access_token) {
-        throw new Error('Authentication required');
+        throw new Error("Authentication required");
       }
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
+      const response = await fetch("/api/chat", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           scanId: scan.id,
           message: message,
-          language: scan.language
+          language: scan.language,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Chat request failed');
+        throw new Error(errorData.error || "Chat request failed");
       }
 
       const result = await response.json();
 
       await fetchChatHistory();
-      setChatMessage('');
+      setChatMessage("");
 
       // If voice mode and response has audio, play it automatically
       if (isVoice && result.audioUrl && voiceConversationActive) {
@@ -272,10 +330,10 @@ export default function ResultPage() {
         }, 500);
       }
 
-      toast.success(isVoice ? 'Voice message sent!' : 'Message sent!');
+      toast.success(isVoice ? "Voice message sent!" : "Message sent!");
     } catch (error: any) {
-      console.error('Chat error:', error);
-      toast.error(error.message || 'Failed to send message. Please try again.');
+      console.error("Chat error:", error);
+      toast.error(error.message || "Failed to send message. Please try again.");
     } finally {
       setIsChatLoading(false);
     }
@@ -285,20 +343,20 @@ export default function ResultPage() {
     try {
       setIsListening(true);
       setIsProcessingVoice(false);
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          sampleRate: 44100
-        }
+          sampleRate: 44100,
+        },
       });
-      
+
       streamRef.current = stream;
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: "audio/webm;codecs=opus",
       });
-      
+
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -311,27 +369,31 @@ export default function ResultPage() {
       mediaRecorder.onstop = async () => {
         setIsListening(false);
         setIsProcessingVoice(true);
-        
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
+
+        const audioBlob = new Blob(chunksRef.current, {
+          type: "audio/webm;codecs=opus",
+        });
         await processVoiceInput(audioBlob);
-        
+
         // Stop all tracks
         if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current.getTracks().forEach((track) => track.stop());
           streamRef.current = null;
         }
       };
 
       mediaRecorder.start();
-      toast.success('Listening... speak now!');
+      toast.success("Listening... speak now!");
     } catch (error: any) {
-      console.error('Error starting voice recording:', error);
+      console.error("Error starting voice recording:", error);
       setIsListening(false);
-      
-      if (error.name === 'NotAllowedError') {
-        toast.error('Microphone access denied. Please enable microphone permissions.');
+
+      if (error.name === "NotAllowedError") {
+        toast.error(
+          "Microphone access denied. Please enable microphone permissions."
+        );
       } else {
-        toast.error('Unable to access microphone. Please try again.');
+        toast.error("Unable to access microphone. Please try again.");
       }
     }
   };
@@ -341,7 +403,7 @@ export default function ResultPage() {
       mediaRecorderRef.current.stop();
     }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     setIsListening(false);
@@ -353,32 +415,32 @@ export default function ResultPage() {
       // Convert blob to base64
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const base64Audio = (reader.result as string).split(',')[1];
-        
+        const base64Audio = (reader.result as string).split(",")[1];
+
         // Call transcription API
-        const response = await fetch('/api/transcribe', {
-          method: 'POST',
+        const response = await fetch("/api/transcribe", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             audio: base64Audio,
-            language: scan.language
+            language: scan.language,
           }),
         });
 
         if (!response.ok) {
-          throw new Error('Transcription failed');
+          throw new Error("Transcription failed");
         }
 
         const result = await response.json();
-        
+
         if (result.text && result.text.trim()) {
           // Send transcribed text to chat
           await handleChatSubmit(result.text.trim(), true);
         } else {
-          toast.error('No speech detected. Please try again.');
-          
+          toast.error("No speech detected. Please try again.");
+
           // If in voice conversation mode, restart listening
           if (voiceConversationActive) {
             setTimeout(() => {
@@ -387,11 +449,11 @@ export default function ResultPage() {
           }
         }
       };
-      
+
       reader.readAsDataURL(audioBlob);
     } catch (error) {
-      console.error('Error processing voice input:', error);
-      toast.error('Failed to process voice message. Please try again.');
+      console.error("Error processing voice input:", error);
+      toast.error("Failed to process voice message. Please try again.");
     } finally {
       setIsProcessingVoice(false);
     }
@@ -404,17 +466,17 @@ export default function ResultPage() {
       setIsVoiceMode(false);
       stopVoiceRecording();
       stopAudio();
-      toast.info('Voice conversation ended');
+      toast.info("Voice conversation ended");
     } else {
       // Start voice conversation
       setVoiceConversationActive(true);
       setIsVoiceMode(true);
       startVoiceRecording();
-      toast.success('Voice conversation started! Ask me anything about this artwork.');
+      toast.success(
+        "Voice conversation started! Ask me anything about this artwork."
+      );
     }
   };
-
-
 
   const scrollToNewMessage = () => {
     // Find the chat container and the last AI response
@@ -422,30 +484,30 @@ export default function ResultPage() {
     if (!chatContainer) return;
 
     // Find all AI response elements
-    const aiResponses = chatContainer.querySelectorAll('[data-ai-response]');
+    const aiResponses = chatContainer.querySelectorAll("[data-ai-response]");
     const lastAiResponse = aiResponses[aiResponses.length - 1];
-    
+
     if (lastAiResponse) {
       // Scroll to the beginning of the AI response with smooth animation
-      lastAiResponse.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start',
-        inline: 'nearest'
+      lastAiResponse.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+        inline: "nearest",
       });
-      
+
       // Clear the new message notification after scrolling
       setTimeout(() => {
         setHasNewMessage(false);
       }, 1000);
-      
+
       // Show a subtle toast to indicate new response
-      toast.success('New AI response', {
+      toast.success("New AI response", {
         duration: 2000,
         style: {
-          background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-          color: 'white',
-          border: 'none'
-        }
+          background: "linear-gradient(135deg, #8b5cf6, #ec4899)",
+          color: "white",
+          border: "none",
+        },
       });
     }
   };
@@ -455,9 +517,9 @@ export default function ResultPage() {
       id: `description-${scan.id}`,
       url: scan.audio_url,
       title: scan.title,
-      type: 'description' as const
+      type: "description" as const,
     };
-    
+
     if (currentTrack?.id === descriptionTrack.id && isPlaying) {
       pauseAudio();
     } else {
@@ -526,7 +588,9 @@ export default function ResultPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-300/30 border-t-emerald-400"></div>
             <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-emerald-400/20 to-teal-400/20 blur-xl"></div>
           </div>
-          <p className="text-emerald-100 font-medium">Loading artwork analysis...</p>
+          <p className="text-emerald-100 font-medium">
+            Loading artwork analysis...
+          </p>
         </motion.div>
       </div>
     );
@@ -535,15 +599,19 @@ export default function ResultPage() {
   if (!scan) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900">
-        <motion.div 
+        <motion.div
           className="text-center space-y-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-2xl font-bold text-white mb-2">Artwork not found</h2>
-          <p className="text-gray-300 mb-6">The artwork you're looking for doesn't exist or has been removed.</p>
-          <Button 
-            onClick={() => router.push('/dashboard')}
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Artwork not found
+          </h2>
+          <p className="text-gray-300 mb-6">
+            The artwork you're looking for doesn't exist or has been removed.
+          </p>
+          <Button
+            onClick={() => router.push("/dashboard")}
             className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
           >
             Return to Dashboard
@@ -578,8 +646,8 @@ export default function ResultPage() {
               },
             },
             particles: {
-              color: { 
-                value: ["#10b981", "#34d399", "#6ee7b7", "#059669", "#047857"] 
+              color: {
+                value: ["#10b981", "#34d399", "#6ee7b7", "#059669", "#047857"],
               },
               links: {
                 color: "#10b981",
@@ -621,13 +689,13 @@ export default function ResultPage() {
           className="absolute top-40 right-20 w-40 h-40 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full blur-3xl"
           variants={floatingVariants}
           animate="animate"
-          style={{ animationDelay: '1s' }}
+          style={{ animationDelay: "1s" }}
         />
         <motion.div
           className="absolute bottom-32 left-20 w-36 h-36 bg-gradient-to-br from-teal-500/10 to-green-500/10 rounded-full blur-3xl"
           variants={floatingVariants}
           animate="animate"
-          style={{ animationDelay: '2s' }}
+          style={{ animationDelay: "2s" }}
         />
       </div>
 
@@ -656,48 +724,70 @@ export default function ResultPage() {
                   <div className="absolute inset-0 border-4 border-yellow-400/30 rounded-full"></div>
                   <div className="absolute inset-0 border-4 border-transparent border-t-yellow-400 rounded-full"></div>
                 </motion.div>
-                
+
                 {/* Pulsing rings */}
                 <motion.div
                   className="absolute inset-0 w-20 h-20 mx-auto border-2 border-orange-400/40 rounded-full"
                   animate={{ scale: [1, 1.3, 1], opacity: [0.7, 0.3, 0.7] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
                 />
                 <motion.div
                   className="absolute inset-0 w-20 h-20 mx-auto border-2 border-yellow-400/40 rounded-full"
                   animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.3,
+                  }}
                 />
               </div>
-              
+
               {/* Enhanced Status Text */}
               <div className="mb-6">
-                <motion.h3 
+                <motion.h3
                   className="text-2xl font-bold text-yellow-300 mb-3"
                   animate={{ opacity: [0.7, 1, 0.7] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
                 >
                   🎤 Processing your voice...
                 </motion.h3>
-                
-                <motion.p 
+
+                <motion.p
                   className="text-orange-200 text-lg"
                   animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.5,
+                  }}
                 >
                   Converting speech to text
                 </motion.p>
               </div>
-              
+
               {/* Progress Bar */}
               <div className="w-full bg-gray-700/50 rounded-full h-2 mb-4">
                 <motion.div
                   className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full"
                   animate={{ width: ["0%", "70%", "100%", "0%"] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
                 />
               </div>
-              
+
               <p className="text-sm text-gray-300">
                 Please wait while we process your message...
               </p>
@@ -723,26 +813,32 @@ export default function ResultPage() {
             >
               {/* Voice Wave Animation */}
               <div className="mb-6">
-                <VoiceWaveAnimation 
-                  isListening={isListening} 
+                <VoiceWaveAnimation
+                  isListening={isListening}
                   isProcessing={isProcessingVoice}
                   className="h-20"
                 />
               </div>
-              
+
               {/* Status Text */}
               <div className="mb-6">
                 <h3 className="text-xl font-semibold text-white mb-2">
-                  {isListening ? 'Listening...' : 
-                   isProcessingVoice ? 'Processing...' : 'Voice Mode'}
+                  {isListening
+                    ? "Listening..."
+                    : isProcessingVoice
+                    ? "Processing..."
+                    : "Voice Mode"}
                 </h3>
-                
+
                 <p className="text-gray-300">
-                  {isListening ? 'Speak clearly about the artwork' :
-                   isProcessingVoice ? 'Converting speech to text...' : 'Voice conversation active'}
+                  {isListening
+                    ? "Speak clearly about the artwork"
+                    : isProcessingVoice
+                    ? "Converting speech to text..."
+                    : "Voice conversation active"}
                 </p>
               </div>
-              
+
               {/* Control Buttons */}
               <div className="flex justify-center space-x-4">
                 {isListening && (
@@ -755,7 +851,7 @@ export default function ResultPage() {
                     Stop
                   </Button>
                 )}
-                
+
                 <Button
                   onClick={toggleVoiceConversation}
                   variant="outline"
@@ -804,7 +900,7 @@ export default function ResultPage() {
       />
 
       {/* Header */}
-      <motion.header 
+      <motion.header
         className="relative z-10 bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -813,11 +909,10 @@ export default function ResultPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-               
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push("/dashboard")}
                 disabled={isLoggingOut}
                 className="text-white/80 hover:text-white hover:bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 transition-all duration-300"
               >
@@ -838,9 +933,8 @@ export default function ResultPage() {
                 Artwork Analysis
               </h1>
             </div>
-            
-            <div className="flex items-center space-x-2">
 
+            <div className="flex items-center space-x-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -861,7 +955,7 @@ export default function ResultPage() {
       </motion.header>
 
       {/* Main Content */}
-      <motion.main 
+      <motion.main
         className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
         variants={containerVariants}
         initial="hidden"
@@ -869,7 +963,7 @@ export default function ResultPage() {
       >
         <div className="space-y-6 lg:space-y-8">
           {/* Artwork Image and Basic Info */}
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8"
             variants={itemVariants}
           >
@@ -883,15 +977,17 @@ export default function ResultPage() {
                       alt={scan.title}
                       className="w-full h-auto max-h-[70vh] object-contain bg-gray-900"
                     />
-                    
+
                     {/* Image Overlay with Actions */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
                         <div className="text-white">
                           <p className="text-sm font-medium">Scanned on</p>
-                          <p className="text-xs opacity-90">{formatDate(scan.created_at)}</p>
+                          <p className="text-xs opacity-90">
+                            {formatDate(scan.created_at)}
+                          </p>
                         </div>
-                        
+
                         <div className="flex space-x-2">
                           <Button
                             size="sm"
@@ -899,9 +995,13 @@ export default function ResultPage() {
                             onClick={() => setIsFavorited(!isFavorited)}
                             className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
                           >
-                            <Heart className={`h-4 w-4 ${isFavorited ? 'fill-current text-red-400' : ''}`} />
+                            <Heart
+                              className={`h-4 w-4 ${
+                                isFavorited ? "fill-current text-red-400" : ""
+                              }`}
+                            />
                           </Button>
-                          
+
                           <Button
                             size="sm"
                             variant="secondary"
@@ -928,7 +1028,7 @@ export default function ResultPage() {
                         <CardTitle className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-3">
                           {scan.title}
                         </CardTitle>
-                        
+
                         <div className="flex items-center space-x-4 text-sm text-gray-400">
                           <span className="bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full font-medium border border-emerald-400/30">
                             {scan.language.toUpperCase()}
@@ -936,29 +1036,39 @@ export default function ResultPage() {
                           <span>{formatDate(scan.created_at)}</span>
                         </div>
                       </div>
-                      
-                      <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10">
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-white/80 hover:text-white hover:bg-white/10"
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent>
                     <div className="prose prose-sm max-w-none">
-                      <p className={`text-gray-200 leading-relaxed ${
-                        !showFullDescription && scan.description.length > 300 ? 'line-clamp-4' : ''
-                      }`}>
+                      <p
+                        className={`text-gray-200 leading-relaxed ${
+                          !showFullDescription && scan.description.length > 300
+                            ? "line-clamp-4"
+                            : ""
+                        }`}
+                      >
                         {scan.description}
                       </p>
-                      
+
                       {scan.description.length > 300 && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setShowFullDescription(!showFullDescription)}
+                          onClick={() =>
+                            setShowFullDescription(!showFullDescription)
+                          }
                           className="mt-2 text-emerald-400 hover:text-emerald-300 p-0 h-auto"
                         >
-                          {showFullDescription ? 'Show less' : 'Read more'}
+                          {showFullDescription ? "Show less" : "Read more"}
                         </Button>
                       )}
                     </div>
@@ -976,7 +1086,8 @@ export default function ResultPage() {
                               disabled={isLoggingOut}
                               className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
                             >
-                              {currentTrack?.type === 'description' && isPlaying ? (
+                              {currentTrack?.type === "description" &&
+                              isPlaying ? (
                                 <>
                                   <Pause className="h-4 w-4 mr-2" />
                                   Pause
@@ -989,24 +1100,27 @@ export default function ResultPage() {
                               )}
                             </Button>
                           </motion.div>
-                          
-                          {currentTrack?.type === 'description' && isPlaying && (
-                            <motion.div
-                              className="flex items-center space-x-2 text-sm text-emerald-400"
-                              initial={{ opacity: 0, x: 20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 20 }}
-                            >
-                              <VoiceWaveAnimation 
-                                isListening={true} 
-                                isProcessing={false}
-                                className="h-4"
-                              />
-                              <span className="font-medium">Playing description...</span>
-                            </motion.div>
-                          )}
+
+                          {currentTrack?.type === "description" &&
+                            isPlaying && (
+                              <motion.div
+                                className="flex items-center space-x-2 text-sm text-emerald-400"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                              >
+                                <VoiceWaveAnimation
+                                  isListening={true}
+                                  isProcessing={false}
+                                  className="h-4"
+                                />
+                                <span className="font-medium">
+                                  Playing description...
+                                </span>
+                              </motion.div>
+                            )}
                         </div>
-                        
+
                         <p className="text-xs text-gray-400 mt-2">
                           Listen to an AI-narrated description of this artwork
                         </p>
@@ -1025,26 +1139,34 @@ export default function ResultPage() {
                         <motion.div
                           className="bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-xl"
                           animate={{ rotate: [0, 5, -5, 0] }}
-                          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                          transition={{
+                            duration: 4,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
                         >
                           <Mic className="h-6 w-6 text-white" />
                         </motion.div>
-                        
+
                         <div>
-                          <h4 className="font-semibold text-white mb-1">Voice Conversation</h4>
+                          <h4 className="font-semibold text-white mb-1">
+                            Voice Conversation
+                          </h4>
                           <p className="text-sm text-gray-200 font-medium">
-                            {voiceConversationActive ? 'Voice mode is active' : 'Talk naturally with AI about this artwork'}
+                            {voiceConversationActive
+                              ? "Voice mode is active"
+                              : "Talk naturally with AI about this artwork"}
                           </p>
                         </div>
                       </div>
-                      
+
                       <Button
                         onClick={toggleVoiceConversation}
                         disabled={isLoggingOut || isChatLoading}
                         className={`rounded-full px-6 transition-all duration-300 ${
-                          voiceConversationActive 
-                            ? 'bg-red-500 hover:bg-red-600 text-white' 
-                            : 'bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white'
+                          voiceConversationActive
+                            ? "bg-red-500 hover:bg-red-600 text-white"
+                            : "bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
                         }`}
                       >
                         {voiceConversationActive ? (
@@ -1084,30 +1206,34 @@ export default function ResultPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <motion.div
                     animate={{ rotate: [0, 10, -10, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
                   >
                     <Sparkles className="h-6 w-6 text-purple-400" />
                   </motion.div>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="p-6 space-y-6">
                 {/* Chat History */}
                 <AnimatePresence>
                   {chatHistory.length > 0 && (
-                    <motion.div 
+                    <motion.div
                       ref={chatContainerRef}
                       className="space-y-4 max-h-96 overflow-y-auto"
                       initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
+                      animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                     >
                       {chatHistory.map((chat, index) => (
-                        <motion.div 
-                          key={chat.id} 
+                        <motion.div
+                          key={chat.id}
                           className="space-y-3"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -1116,13 +1242,15 @@ export default function ResultPage() {
                           {/* User Message */}
                           <div className="flex justify-end">
                             <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-2xl rounded-br-md max-w-xs sm:max-w-md shadow-lg">
-                              <p className="text-sm leading-relaxed">{chat.message}</p>
+                              <p className="text-sm leading-relaxed">
+                                {chat.message}
+                              </p>
                             </div>
                           </div>
-                          
+
                           {/* AI Response */}
                           <div className="flex justify-start">
-                            <div 
+                            <div
                               className="bg-slate-800/80 backdrop-blur-sm border border-emerald-400/30 p-4 rounded-2xl rounded-bl-md max-w-xs sm:max-w-md shadow-sm"
                               data-ai-response
                             >
@@ -1130,11 +1258,15 @@ export default function ResultPage() {
                                 <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-1 rounded-full">
                                   <Zap className="h-3 w-3 text-white" />
                                 </div>
-                                <span className="text-xs font-medium text-gray-300">AI Assistant</span>
+                                <span className="text-xs font-medium text-gray-300">
+                                  AI Assistant
+                                </span>
                               </div>
-                              
-                              <p className="text-sm text-white leading-relaxed mb-3 font-medium">{chat.response}</p>
-                              
+
+                              <p className="text-sm text-white leading-relaxed mb-3 font-medium">
+                                {chat.response}
+                              </p>
+
                               {chat.audio_url && (
                                 <div className="flex items-center space-x-2">
                                   <Button
@@ -1144,24 +1276,29 @@ export default function ResultPage() {
                                     className="text-xs text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 p-2 h-auto"
                                     onClick={() => {
                                       if (!isLoggingOut) {
-                                        playResponseAudio(chat.audio_url, chat.response);
+                                        playResponseAudio(
+                                          chat.audio_url,
+                                          chat.response
+                                        );
                                       }
                                     }}
                                   >
                                     <Play className="h-3 w-3 mr-1" />
                                     Play Response
                                   </Button>
-                                  
-                                  {currentTrack?.type === 'response' && isPlaying && currentTrack?.url === chat.audio_url && (
-                                    <div className="flex items-center text-xs text-purple-400">
-                                      <VoiceWaveAnimation 
-                                        isListening={true} 
-                                        isProcessing={false}
-                                        className="h-3 mr-1"
-                                      />
-                                      <span>Playing...</span>
-                                    </div>
-                                  )}
+
+                                  {currentTrack?.type === "response" &&
+                                    isPlaying &&
+                                    currentTrack?.url === chat.audio_url && (
+                                      <div className="flex items-center text-xs text-purple-400">
+                                        <VoiceWaveAnimation
+                                          isListening={true}
+                                          isProcessing={false}
+                                          className="h-3 mr-1"
+                                        />
+                                        <span>Playing...</span>
+                                      </div>
+                                    )}
                                 </div>
                               )}
                             </div>
@@ -1181,22 +1318,35 @@ export default function ResultPage() {
                       value={chatMessage}
                       onChange={(e) => setChatMessage(e.target.value)}
                       placeholder="Ask anything about this artwork..."
-                      disabled={isChatLoading || isLoggingOut || voiceConversationActive}
+                      disabled={
+                        isChatLoading || isLoggingOut || voiceConversationActive
+                      }
                       className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent disabled:opacity-50 transition-all duration-200"
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !isChatLoading && !isLoggingOut && chatMessage.trim() && !voiceConversationActive) {
+                        if (
+                          e.key === "Enter" &&
+                          !isChatLoading &&
+                          !isLoggingOut &&
+                          chatMessage.trim() &&
+                          !voiceConversationActive
+                        ) {
                           handleChatSubmit(chatMessage);
                         }
                       }}
                     />
-                    
+
                     <motion.div
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
                       <Button
                         onClick={() => handleChatSubmit(chatMessage)}
-                        disabled={isChatLoading || !chatMessage.trim() || isLoggingOut || voiceConversationActive}
+                        disabled={
+                          isChatLoading ||
+                          !chatMessage.trim() ||
+                          isLoggingOut ||
+                          voiceConversationActive
+                        }
                         className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         {isChatLoading ? (
@@ -1211,7 +1361,9 @@ export default function ResultPage() {
                   {/* Voice Input - Only show if not in voice conversation mode */}
                   {!voiceConversationActive && (
                     <EnhancedVoiceRecorder
-                      onTranscription={(text) => !isLoggingOut && handleChatSubmit(text, true)}
+                      onTranscription={(text) =>
+                        !isLoggingOut && handleChatSubmit(text, true)
+                      }
                       language={scan.language}
                       disabled={isLoggingOut}
                     />
@@ -1220,26 +1372,36 @@ export default function ResultPage() {
 
                 {/* Quick Questions */}
                 {chatHistory.length === 0 && (
-                  <motion.div 
+                  <motion.div
                     className="space-y-3"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
                   >
-                    <p className="text-sm font-medium text-gray-200">Quick questions to get started:</p>
+                    <p className="text-sm font-medium text-gray-200">
+                      Quick questions to get started:
+                    </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {[
                         "What's the historical significance?",
                         "Who created this artwork?",
                         "What techniques were used?",
-                        "What's the cultural context?"
+                        "What's the cultural context?",
                       ].map((question, index) => (
                         <Button
                           key={index}
                           variant="outline"
                           size="sm"
-                          onClick={() => !isLoggingOut && !voiceConversationActive && handleChatSubmit(question)}
-                          disabled={isChatLoading || isLoggingOut || voiceConversationActive}
+                          onClick={() =>
+                            !isLoggingOut &&
+                            !voiceConversationActive &&
+                            handleChatSubmit(question)
+                          }
+                          disabled={
+                            isChatLoading ||
+                            isLoggingOut ||
+                            voiceConversationActive
+                          }
                           className="text-left justify-start text-xs p-3 h-auto bg-slate-800/80 border-emerald-400/30 text-white hover:bg-slate-700/80 hover:border-emerald-400/50 transition-all duration-200 backdrop-blur-sm font-medium"
                         >
                           {question}
