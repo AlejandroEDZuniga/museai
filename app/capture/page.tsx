@@ -281,6 +281,8 @@ export default function CapturePage() {
 
       
 
+      
+
       if (!response.ok) {
         const err = await response.json();
         throw new Error(err?.error || 'Server response failed');
