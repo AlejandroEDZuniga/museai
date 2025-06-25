@@ -325,8 +325,10 @@ export default function Dashboard() {
                 ) : (
                   <LogOut className="h-4 w-4" />
                 )}
-                <BoltBadge/>
               </Button>
+
+                {/* Bolt badge inline in header */}
+              <BoltBadge variant="inline" />
              
             </div>
           </div>
