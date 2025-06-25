@@ -343,81 +343,181 @@ export default function ResultPage() {
   //   }
   // };
 
-  const handleChatSubmit = async (
-    message: string,
-    isVoice: boolean = false
-  ) => {
-    if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
+  // const handleChatSubmit = async (
+  //   message: string,
+  //   isVoice: boolean = false
+  // ) => {
+  //   if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
 
-    setIsChatLoading(true);
+  //   setIsChatLoading(true);
 
-    try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+  //   try {
+  //     const {
+  //       data: { session },
+  //       error: sessionError,
+  //     } = await supabase.auth.getSession();
 
-      if (sessionError || !session?.access_token) {
-        throw new Error("Authentication required");
-      }
+  //     if (sessionError || !session?.access_token) {
+  //       throw new Error("Authentication required");
+  //     }
 
-      // Enviar mensaje y obtener respuesta AI
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          scanId: scan.id,
-          message,
-          language: scan.language,
-        }),
+  //     // Enviar mensaje y obtener respuesta AI
+  //     const response = await fetch("/api/chat", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${session.access_token}`,
+  //       },
+  //       body: JSON.stringify({
+  //         scanId: scan.id,
+  //         message,
+  //         language: scan.language,
+  //       }),
+  //     });
+
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.error || "Chat request failed");
+  //     }
+
+  //     const result = await response.json();
+
+  //     // Activar animación de generación de audio
+  //     setGeneratingChatAudioId(result.id);
+
+  //     // Llamar al endpoint que genera el audio (en segundo plano)
+  //     fetch("/api/chat-generate-audio", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${session.access_token}`,
+  //       },
+  //       body: JSON.stringify({
+  //         chatId: result.id,
+  //         text: result.response,
+  //         language: scan.language,
+  //       }),
+  //     })
+  //       .catch((err) => {
+  //         console.error("⚠️ Error generating chat audio:", err);
+  //       })
+  //       .finally(() => {
+  //         // Desactivar animación una vez que termine
+  //         setGeneratingChatAudioId(null);
+  //       });
+
+  //     // Actualizar chat
+  //     await fetchChatHistory();
+  //     setChatMessage("");
+
+  //     toast.success(isVoice ? "Voice message sent!" : "Message sent!");
+  //   } catch (error: any) {
+  //     console.error("❌ Chat error:", error);
+  //     toast.error(error.message || "Failed to send message. Please try again.");
+  //   } finally {
+  //     setIsChatLoading(false);
+  //   }
+  // };
+
+
+  const handleChatSubmit = async (message: string, isVoice: boolean = false) => {
+  if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
+
+  setIsChatLoading(true);
+
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.access_token) {
+      throw new Error("Authentication required");
+    }
+
+    // 1. Enviar mensaje al endpoint /api/chat
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        scanId: scan.id,
+        message,
+        language: scan.language,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Chat request failed");
+    }
+
+    const result = await response.json();
+
+    // 2. Agregar mensaje de respuesta al chatHistory
+    const newMessage = {
+      id: result.id,
+      message: result.message,
+      response: result.response,
+      created_at: result.createdAt,
+      audio_url: null,
+    };
+
+    setChatHistory((prev) => [...prev, newMessage]);
+
+    // 3. Mostrar animación "Generating audio..."
+    setGeneratingChatAudioId(result.id);
+
+    // 4. Generar el audio en segundo plano
+    fetch("/api/chat-generate-audio", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        chatId: result.id,
+        text: result.response,
+        language: scan.language,
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || "Audio generation failed");
+        }
+        const data = await res.json();
+
+        console.log("✅ Audio URL generado:", data.audioUrl);
+
+        // 5. Actualizar el chatHistory con el audio_url generado
+        setChatHistory((prev) =>
+          prev.map((chat) =>
+            chat.id === result.id ? { ...chat, audio_url: data.audioUrl } : chat
+          )
+        );
+      })
+      .catch((err) => {
+        console.error("⚠️ Error generating chat audio:", err);
+      })
+      .finally(() => {
+        setGeneratingChatAudioId(null);
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Chat request failed");
-      }
+    // 6. Limpiar input
+    setChatMessage("");
+    toast.success(isVoice ? "Voice message sent!" : "Message sent!");
 
-      const result = await response.json();
+  } catch (error: any) {
+    console.error("❌ Chat error:", error);
+    toast.error(error.message || "Failed to send message. Please try again.");
+  } finally {
+    setIsChatLoading(false);
+  }
+};
 
-      // Activar animación de generación de audio
-      setGeneratingChatAudioId(result.id);
-
-      // Llamar al endpoint que genera el audio (en segundo plano)
-      fetch("/api/chat-generate-audio", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          chatId: result.id,
-          text: result.response,
-          language: scan.language,
-        }),
-      })
-        .catch((err) => {
-          console.error("⚠️ Error generating chat audio:", err);
-        })
-        .finally(() => {
-          // Desactivar animación una vez que termine
-          setGeneratingChatAudioId(null);
-        });
-
-      // Actualizar chat
-      await fetchChatHistory();
-      setChatMessage("");
-
-      toast.success(isVoice ? "Voice message sent!" : "Message sent!");
-    } catch (error: any) {
-      console.error("❌ Chat error:", error);
-      toast.error(error.message || "Failed to send message. Please try again.");
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
 
   const startVoiceRecording = async () => {
     try {
