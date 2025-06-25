@@ -60,6 +60,8 @@ export default function ResultPage() {
   const [generatingChatAudioId, setGeneratingChatAudioId] = useState<
     string | null
   >(null);
+  const voiceSectionRef = useRef<HTMLDivElement | null>(null);
+
 
   // New message notification
   const [hasNewMessage, setHasNewMessage] = useState(false);
@@ -211,77 +213,77 @@ export default function ResultPage() {
       console.error("Error fetching chat history:", error);
     }
   };
-const handleSignOut = async () => {
-  if (isLoggingOut) return;
+  const handleSignOut = async () => {
+    if (isLoggingOut) return;
 
-  setIsLoggingOut(true);
+    setIsLoggingOut(true);
 
-  try {
-    // ✅ Primero detener audio o grabaciones activas
-    cleanupAudio?.();
-    stopVoiceRecording?.();
-
-    // ✅ Verificar si hay sesión activa antes del signOut
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (session) {
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        console.error("Supabase signOut error:", error);
-        toast.error(
-          "There was an issue signing out, but you have been logged out locally."
-        );
-      } else {
-        toast.success("Successfully signed out. See you next time!");
-      }
-    } else {
-      console.warn("No active session found. Skipping Supabase signOut.");
-    }
-
-    // ✅ Luego limpiar localStorage
-    const keysToRemove = [
-      "hasSeenLocationPrompt",
-      "userLocation",
-      "userCoords",
-      "supabase.auth.token",
-      "sb-auth-token",
-    ];
-
-    keysToRemove.forEach((key) => {
-      try {
-        localStorage.removeItem(key);
-      } catch (error) {
-        console.warn(`Failed to remove ${key} from localStorage:`, error);
-      }
-    });
-
-    // Limpiar sessionStorage
     try {
-      sessionStorage.clear();
-    } catch (error) {
-      console.warn("Failed to clear sessionStorage:", error);
+      // ✅ Primero detener audio o grabaciones activas
+      cleanupAudio?.();
+      stopVoiceRecording?.();
+
+      // ✅ Verificar si hay sesión activa antes del signOut
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        const { error } = await supabase.auth.signOut();
+
+        if (error) {
+          console.error("Supabase signOut error:", error);
+          toast.error(
+            "There was an issue signing out, but you have been logged out locally."
+          );
+        } else {
+          toast.success("Successfully signed out. See you next time!");
+        }
+      } else {
+        console.warn("No active session found. Skipping Supabase signOut.");
+      }
+
+      // ✅ Luego limpiar localStorage
+      const keysToRemove = [
+        "hasSeenLocationPrompt",
+        "userLocation",
+        "userCoords",
+        "supabase.auth.token",
+        "sb-auth-token",
+      ];
+
+      keysToRemove.forEach((key) => {
+        try {
+          localStorage.removeItem(key);
+        } catch (error) {
+          console.warn(`Failed to remove ${key} from localStorage:`, error);
+        }
+      });
+
+      // Limpiar sessionStorage
+      try {
+        sessionStorage.clear();
+      } catch (error) {
+        console.warn("Failed to clear sessionStorage:", error);
+      }
+
+      // ✅ Redirigir con pequeño delay para mostrar toast
+      setTimeout(() => {
+        router.push("/auth");
+      }, 1000);
+    } catch (error: any) {
+      console.error("Logout error:", error);
+      toast.error(
+        "An error occurred during logout, but you have been signed out."
+      );
+
+      setTimeout(() => {
+        router.push("/auth");
+      }, 1500);
+    } finally {
+      setIsLoggingOut(false);
     }
-
-    // ✅ Redirigir con pequeño delay para mostrar toast
-    setTimeout(() => {
-      router.push("/auth");
-    }, 1000);
-
-  } catch (error: any) {
-    console.error("Logout error:", error);
-    toast.error(
-      "An error occurred during logout, but you have been signed out."
-    );
-
-    setTimeout(() => {
-      router.push("/auth");
-    }, 1500);
-  } finally {
-    setIsLoggingOut(false);
-  }
-};
-
+  };
 
   const playResponseAudio = (audioUrl: string, responseText: string) => {
     const responseTrack = {
@@ -294,348 +296,112 @@ const handleSignOut = async () => {
     playAudio(responseTrack);
   };
 
-  // const handleChatSubmit = async (
-  //   message: string,
-  //   isVoice: boolean = false
-  // ) => {
-  //   if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
-
-  //   setIsChatLoading(true);
-
-  //   try {
-  //     const {
-  //       data: { session },
-  //       error: sessionError,
-  //     } = await supabase.auth.getSession();
-
-  //     if (sessionError || !session?.access_token) {
-  //       throw new Error("Authentication required");
-  //     }
-
-  //     const response = await fetch("/api/chat", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${session.access_token}`,
-  //       },
-  //       body: JSON.stringify({
-  //         scanId: scan.id,
-  //         message: message,
-  //         language: scan.language,
-  //       }),
-  //     });
-
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.error || "Chat request failed");
-  //     }
-
-  //     const result = await response.json();
-
-  //     await fetchChatHistory();
-  //     setChatMessage("");
-
-  //     // If voice mode and response has audio, play it automatically
-  //     if (isVoice && result.audioUrl && voiceConversationActive) {
-  //       setTimeout(() => {
-  //         playResponseAudio(result.audioUrl, result.response);
-  //       }, 500);
-  //     }
-
-  //     toast.success(isVoice ? "Voice message sent!" : "Message sent!");
-  //   } catch (error: any) {
-  //     console.error("Chat error:", error);
-  //     toast.error(error.message || "Failed to send message. Please try again.");
-  //   } finally {
-  //     setIsChatLoading(false);
-  //   }
-  // };
-
-  // const handleChatSubmit = async (
-  //   message: string,
-  //   isVoice: boolean = false
-  // ) => {
-  //   if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
-
-  //   setIsChatLoading(true);
-
-  //   try {
-  //     const {
-  //       data: { session },
-  //       error: sessionError,
-  //     } = await supabase.auth.getSession();
-
-  //     if (sessionError || !session?.access_token) {
-  //       throw new Error("Authentication required");
-  //     }
-
-  //     // Enviar mensaje y obtener respuesta AI
-  //     const response = await fetch("/api/chat", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${session.access_token}`,
-  //       },
-  //       body: JSON.stringify({
-  //         scanId: scan.id,
-  //         message,
-  //         language: scan.language,
-  //       }),
-  //     });
-
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.error || "Chat request failed");
-  //     }
-
-  //     const result = await response.json();
-
-  //     // Activar animación de generación de audio
-  //     setGeneratingChatAudioId(result.id);
-
-  //     // Llamar al endpoint que genera el audio (en segundo plano)
-  //     fetch("/api/chat-generate-audio", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${session.access_token}`,
-  //       },
-  //       body: JSON.stringify({
-  //         chatId: result.id,
-  //         text: result.response,
-  //         language: scan.language,
-  //       }),
-  //     })
-  //       .catch((err) => {
-  //         console.error("⚠️ Error generating chat audio:", err);
-  //       })
-  //       .finally(() => {
-  //         // Desactivar animación una vez que termine
-  //         setGeneratingChatAudioId(null);
-  //       });
-
-  //     // Actualizar chat
-  //     await fetchChatHistory();
-  //     setChatMessage("");
-
-  //     toast.success(isVoice ? "Voice message sent!" : "Message sent!");
-  //   } catch (error: any) {
-  //     console.error("❌ Chat error:", error);
-  //     toast.error(error.message || "Failed to send message. Please try again.");
-  //   } finally {
-  //     setIsChatLoading(false);
-  //   }
-  // };
-
-  // const handleChatSubmit = async (
-  //   message: string,
-  //   isVoice: boolean = false
-  // ) => {
-  //   if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
-
-  //   setIsChatLoading(true);
-
-  //   try {
-  //     const {
-  //       data: { session },
-  //       error: sessionError,
-  //     } = await supabase.auth.getSession();
-
-  //     if (sessionError || !session?.access_token) {
-  //       throw new Error("Authentication required");
-  //     }
-
-  //     // 1. Enviar mensaje al endpoint /api/chat
-  //     const response = await fetch("/api/chat", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${session.access_token}`,
-  //       },
-  //       body: JSON.stringify({
-  //         scanId: scan.id,
-  //         message,
-  //         language: scan.language,
-  //       }),
-  //     });
-
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.error || "Chat request failed");
-  //     }
-
-  //     const result = await response.json();
-
-  //     // 2. Agregar mensaje de respuesta al chatHistory
-  //     const newMessage = {
-  //       id: result.id,
-  //       message: result.message,
-  //       response: result.response,
-  //       created_at: result.createdAt,
-  //       audio_url: null,
-  //     };
-
-  //     setChatHistory((prev) => [...prev, newMessage]);
-
-  //     // 3. Mostrar animación "Generating audio..."
-  //     setGeneratingChatAudioId(result.id);
-
-  //     // 4. Generar el audio en segundo plano
-  //     fetch("/api/chat-generate-audio", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${session.access_token}`,
-  //       },
-  //       body: JSON.stringify({
-  //         chatId: result.id,
-  //         text: result.response,
-  //         language: scan.language,
-  //       }),
-  //     })
-  //       .then(async (res) => {
-  //         if (!res.ok) {
-  //           const errorData = await res.json();
-  //           throw new Error(errorData.error || "Audio generation failed");
-  //         }
-  //         const data = await res.json();
-
-  //         console.log("✅ Audio URL generado:", data.audioUrl);
-
-  //         // 5. Actualizar el chatHistory con el audio_url generado
-  //         setChatHistory((prev) =>
-  //           prev.map((chat) =>
-  //             chat.id === result.id
-  //               ? { ...chat, audio_url: data.audioUrl }
-  //               : chat
-  //           )
-  //         );
-  //       })
-  //       .catch((err) => {
-  //         console.error("⚠️ Error generating chat audio:", err);
-  //       })
-  //       .finally(() => {
-  //         setGeneratingChatAudioId(null);
-  //       });
-
-  //     // 6. Limpiar input
-  //     setChatMessage("");
-  //     toast.success(isVoice ? "Voice message sent!" : "Message sent!");
-  //   } catch (error: any) {
-  //     console.error("❌ Chat error:", error);
-  //     toast.error(error.message || "Failed to send message. Please try again.");
-  //   } finally {
-  //     setIsChatLoading(false);
-  //   }
-  // };
-
   const handleChatSubmit = async (
-  message: string,
-  isVoice: boolean = false
-) => {
-  if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
+    message: string,
+    isVoice: boolean = false
+  ) => {
+    if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
 
-  setIsChatLoading(true);
+    setIsChatLoading(true);
 
-  try {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-    if (sessionError || !session?.access_token) {
-      throw new Error("Authentication required");
-    }
+      if (sessionError || !session?.access_token) {
+        throw new Error("Authentication required");
+      }
 
-    // 1. Enviar mensaje al endpoint /api/chat
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        scanId: scan.id,
-        message,
-        language: scan.language,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Chat request failed");
-    }
-
-    const result = await response.json();
-
-    // 2. Agregar mensaje al chatHistory sin audio todavía
-    const newMessage = {
-      id: result.id,
-      message: result.message,
-      response: result.response,
-      created_at: result.createdAt,
-      audio_url: undefined, // <-- mejor que null
-    };
-
-    setChatHistory((prev) => [...prev, newMessage]);
-
-    // 3. Mostrar animación "Generating audio..."
-    setGeneratingChatAudioId(result.id);
-
-    // 4. Generar audio en segundo plano
-    fetch("/api/chat-generate-audio", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        chatId: result.id,
-        text: result.response,
-        language: scan.language,
-      }),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.error || "Audio generation failed");
-        }
-
-        const data = await res.json();
-
-        // 5. Actualizar el mensaje con el audio_url
-        setChatHistory((prev) => {
-          const updated = prev.map((chat) =>
-            chat.id === result.id
-              ? { ...chat, audio_url: data.audioUrl }
-              : chat
-          );
-          return [...updated]; // fuerza rerender
-        });
-
-        // 6. Retirar animación después de que se actualice el estado
-        setTimeout(() => {
-          setGeneratingChatAudioId(null);
-        }, 100); // delay mínimo para evitar condiciones de carrera
-      })
-      .catch((err) => {
-        console.error("⚠️ Error generating chat audio:", err);
-        toast.error("Failed to generate audio response.");
-        setGeneratingChatAudioId(null); // fallback para no dejar spinner colgado
+      // 1. Enviar mensaje al endpoint /api/chat
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          scanId: scan.id,
+          message,
+          language: scan.language,
+        }),
       });
 
-    // 7. Limpiar input
-    setChatMessage("");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Chat request failed");
+      }
 
-    toast.success(isVoice ? "Voice message sent!" : "Message sent!");
-  } catch (error: any) {
-    console.error("❌ Chat error:", error);
-    toast.error(error.message || "Failed to send message. Please try again.");
-  } finally {
-    setIsChatLoading(false);
-  }
-};
+      const result = await response.json();
 
+      // 2. Agregar mensaje al chatHistory sin audio todavía
+      const newMessage = {
+        id: result.id,
+        message: result.message,
+        response: result.response,
+        created_at: result.createdAt,
+        audio_url: undefined, // <-- mejor que null
+      };
+
+      setChatHistory((prev) => [...prev, newMessage]);
+
+      // 3. Mostrar animación "Generating audio..."
+      setGeneratingChatAudioId(result.id);
+
+      // 4. Generar audio en segundo plano
+      fetch("/api/chat-generate-audio", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          chatId: result.id,
+          text: result.response,
+          language: scan.language,
+        }),
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || "Audio generation failed");
+          }
+
+          const data = await res.json();
+
+          // 5. Actualizar el mensaje con el audio_url
+          setChatHistory((prev) => {
+            const updated = prev.map((chat) =>
+              chat.id === result.id
+                ? { ...chat, audio_url: data.audioUrl }
+                : chat
+            );
+            return [...updated]; // fuerza rerender
+          });
+
+          // 6. Retirar animación después de que se actualice el estado
+          setTimeout(() => {
+            setGeneratingChatAudioId(null);
+          }, 100); // delay mínimo para evitar condiciones de carrera
+        })
+        .catch((err) => {
+          console.error("⚠️ Error generating chat audio:", err);
+          toast.error("Failed to generate audio response.");
+          setGeneratingChatAudioId(null); // fallback para no dejar spinner colgado
+        });
+
+      // 7. Limpiar input
+      setChatMessage("");
+
+      toast.success(isVoice ? "Voice message sent!" : "Message sent!");
+    } catch (error: any) {
+      console.error("❌ Chat error:", error);
+      toast.error(error.message || "Failed to send message. Please try again.");
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
 
   const startVoiceRecording = async () => {
     try {
@@ -1512,7 +1278,7 @@ const handleSignOut = async () => {
               <motion.div variants={cardVariants}>
                 <Card className="bg-slate-800/90 backdrop-blur-md border border-purple-400/50 shadow-2xl">
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="flex items-center space-x-4">
                         <motion.div
                           className="bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-xl"
@@ -1538,27 +1304,34 @@ const handleSignOut = async () => {
                         </div>
                       </div>
 
-                      <Button
-                        onClick={toggleVoiceConversation}
-                        disabled={isLoggingOut || isChatLoading}
-                        className={`rounded-full px-6 transition-all duration-300 ${
-                          voiceConversationActive
-                            ? "bg-red-500 hover:bg-red-600 text-white"
-                            : "bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
-                        }`}
-                      >
-                        {voiceConversationActive ? (
-                          <>
-                            <MicOff className="h-4 w-4 mr-2" />
-                            End Voice Chat
-                          </>
-                        ) : (
-                          <>
-                            <Mic className="h-4 w-4 mr-2" />
-                            Start Voice Chat
-                          </>
-                        )}
-                      </Button>
+                      <div className="w-full sm:w-auto">
+                        <Button
+                          onClick={() =>
+                            voiceSectionRef?.current?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            })
+                          }
+                          disabled={isLoggingOut || isChatLoading}
+                          className={`w-full sm:w-auto rounded-full px-4 py-2 text-sm transition-all duration-300 ${
+                            voiceConversationActive
+                              ? "bg-red-500 hover:bg-red-600 text-white"
+                              : "bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
+                          }`}
+                        >
+                          {voiceConversationActive ? (
+                            <>
+                              <MicOff className="h-4 w-4 mr-2" />
+                              End Voice Chat
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="h-4 w-4 mr-2" />
+                              Start Voice Chat
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1626,7 +1399,6 @@ const handleSignOut = async () => {
                             </div>
                           </div>
 
-                       
                           {/* AI Response */}
                           <div className="flex justify-start">
                             <div
@@ -1776,15 +1548,17 @@ const handleSignOut = async () => {
                   </div>
 
                   {/* Voice Input - Only show if not in voice conversation mode */}
-                  {!voiceConversationActive && (
-                    <EnhancedVoiceRecorder
-                      onTranscription={(text) =>
-                        !isLoggingOut && handleChatSubmit(text, true)
-                      }
-                      language={scan.language}
-                      disabled={isLoggingOut}
-                    />
-                  )}
+                  <div ref={voiceSectionRef}>
+                    {!voiceConversationActive && (
+                      <EnhancedVoiceRecorder
+                        onTranscription={(text) =>
+                          !isLoggingOut && handleChatSubmit(text, true)
+                        }
+                        language={scan.language}
+                        disabled={isLoggingOut}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {/* Quick Questions */}
