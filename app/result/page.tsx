@@ -171,6 +171,13 @@ export default function ResultPage() {
     };
   }, [cleanupAudio]);
 
+  useEffect(() => {
+    // Si hay audio nuevo en el historial, refrescamos
+    if (chatHistory.some((chat) => chat.audio_url)) {
+      setChatHistory([...chatHistory]);
+    }
+  }, [chatHistory.map((chat) => chat.audio_url).join(",")]);
+
   const fetchScanData = async () => {
     try {
       const { data, error } = await supabase
@@ -1431,28 +1438,33 @@ export default function ResultPage() {
                               </p>
                               {generatingChatAudioId === chat.id && (
                                 <motion.div
-                                  initial={{ opacity: 0, scale: 0.95 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.95 }}
-                                  transition={{
-                                    duration: 0.3,
-                                    ease: "easeInOut",
-                                  }}
-                                  className="flex justify-start w-full mt-2"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.5 }}
+                                  className="mt-4"
                                 >
-                                  <div className="relative bg-slate-800/80 backdrop-blur-sm border border-yellow-500/30 px-5 py-3 rounded-2xl rounded-bl-md max-w-xs sm:max-w-md shadow-md">
-                                    <div className="flex items-center space-x-2">
-                                      <Loader2 className="h-4 w-4 animate-spin text-yellow-400" />
-                                      <span className="text-sm text-yellow-300 font-medium">
-                                        Generating voice response...
+                                  <div className="relative">
+                                    <Button
+                                      disabled
+                                      className="bg-white/10 border border-white/20 text-white flex items-center space-x-2 rounded-full px-6 py-3 shadow-md backdrop-blur-md relative overflow-hidden"
+                                    >
+                                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                      <span className="text-sm font-medium">
+                                        Generating audio...
                                       </span>
-                                    </div>
+                                    </Button>
 
+                                    {/* Efecto pulsante */}
                                     <motion.div
-                                      className="absolute -bottom-2 left-5 h-2 w-2 bg-yellow-400 rounded-full blur-sm animate-ping"
+                                      className="absolute inset-0 rounded-full bg-emerald-500/20 blur-md"
+                                      animate={{
+                                        scale: [1, 1.2, 1],
+                                        opacity: [0.4, 0.2, 0.4],
+                                      }}
                                       transition={{
+                                        duration: 2,
                                         repeat: Infinity,
-                                        duration: 1.2,
+                                        ease: "easeInOut",
                                       }}
                                     />
                                   </div>
