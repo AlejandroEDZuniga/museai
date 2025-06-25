@@ -594,7 +594,6 @@ export default function ResultPage() {
         }
 
         const data = await res.json();
-        console.log("✅ Audio URL generado:", data.audioUrl);
 
         // 5. Actualizar el mensaje con el audio_url
         setChatHistory((prev) => {
@@ -790,16 +789,6 @@ export default function ResultPage() {
       setTimeout(() => {
         setHasNewMessage(false);
       }, 1000);
-
-      // Show a subtle toast to indicate new response
-      toast.success("New AI response", {
-        duration: 2000,
-        style: {
-          background: "linear-gradient(135deg, #8b5cf6, #ec4899)",
-          color: "white",
-          border: "none",
-        },
-      });
     }
   };
 
