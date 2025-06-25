@@ -64,71 +64,72 @@ export default function Dashboard() {
     }
   };
 
-  const handleSignOut = async () => {
-    if (isLoggingOut) return; // Prevent double clicks
-    
-    setIsLoggingOut(true);
-    
-    try {
-      // Clear all local storage data
-      const keysToRemove = [
-        'hasSeenLocationPrompt',
-        'userLocation',
-        'userCoords',
-        'supabase.auth.token',
-        'sb-auth-token'
-      ];
-      
-      keysToRemove.forEach(key => {
-        try {
-          localStorage.removeItem(key);
-        } catch (error) {
-          console.warn(`Failed to remove ${key} from localStorage:`, error);
-        }
-      });
+const handleSignOut = async () => {
+  if (isLoggingOut) return; // Prevent double clicks
 
-      // Clear session storage
-      try {
-        sessionStorage.clear();
-      } catch (error) {
-        console.warn('Failed to clear sessionStorage:', error);
-      }
+  setIsLoggingOut(true);
 
-      // Sign out from Supabase
+  try {
+    // ✅ Primero, verificar si hay sesión activa antes de signOut
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
       const { error } = await supabase.auth.signOut();
-      
       if (error) {
         console.error('Supabase signOut error:', error);
-        // Even if Supabase signOut fails, we should still redirect
-        // as we've cleared local data
         toast.error('There was an issue signing out, but you have been logged out locally.');
       } else {
         toast.success('Successfully signed out. See you next time!');
       }
-
-      // Clear user state
-      setUser(null);
-      setRecentScans([]);
-      
-      // Small delay to show the toast message
-      setTimeout(() => {
-        router.push('/auth');
-      }, 1000);
-
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      
-      // Even if there's an error, we should still try to redirect
-      // after clearing what we can locally
-      toast.error('An error occurred during logout, but you have been signed out.');
-      
-      setTimeout(() => {
-        router.push('/auth');
-      }, 1500);
-    } finally {
-      setIsLoggingOut(false);
+    } else {
+      console.warn('No active session found. Skipping Supabase signOut.');
     }
-  };
+
+    // ✅ Luego limpiar localStorage
+    const keysToRemove = [
+      'hasSeenLocationPrompt',
+      'userLocation',
+      'userCoords',
+      'supabase.auth.token',
+      'sb-auth-token'
+    ];
+
+    keysToRemove.forEach((key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        console.warn(`Failed to remove ${key} from localStorage:`, error);
+      }
+    });
+
+    // Limpiar sessionStorage
+    try {
+      sessionStorage.clear();
+    } catch (error) {
+      console.warn('Failed to clear sessionStorage:', error);
+    }
+
+    // Limpieza de estado local
+    setUser?.(null);
+    setRecentScans?.([]);
+
+    // Delay para mostrar el toast antes de redirigir
+    setTimeout(() => {
+      router.push('/auth');
+    }, 1000);
+
+  } catch (error: any) {
+    console.error('Logout error:', error);
+    toast.error('An error occurred during logout, but you have been signed out.');
+
+    setTimeout(() => {
+      router.push('/auth');
+    }, 1500);
+  } finally {
+    setIsLoggingOut(false);
+  }
+};
+
 
   const containerVariants = {
     hidden: { opacity: 0 },

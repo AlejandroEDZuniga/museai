@@ -61,61 +61,67 @@ export default function HistoryPage() {
     }
   };
 
-  const handleSignOut = async () => {
-    if (isLoggingOut) return;
-    
-    setIsLoggingOut(true);
-    
-    try {
-      // Clear local storage
-      const keysToRemove = [
-        'hasSeenLocationPrompt',
-        'userLocation',
-        'userCoords',
-        'supabase.auth.token',
-        'sb-auth-token'
-      ];
-      
-      keysToRemove.forEach(key => {
-        try {
-          localStorage.removeItem(key);
-        } catch (error) {
-          console.warn(`Failed to remove ${key} from localStorage:`, error);
-        }
-      });
+const handleSignOut = async () => {
+  if (isLoggingOut) return;
 
-      // Clear session storage
-      try {
-        sessionStorage.clear();
-      } catch (error) {
-        console.warn('Failed to clear sessionStorage:', error);
-      }
+  setIsLoggingOut(true);
 
-      // Sign out from Supabase
+  try {
+    // ✅ Verificar si hay sesión activa antes de llamar signOut
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
       const { error } = await supabase.auth.signOut();
-      
       if (error) {
         console.error('Supabase signOut error:', error);
         toast.error('There was an issue signing out, but you have been logged out locally.');
       } else {
         toast.success('Successfully signed out. See you next time!');
       }
-      
-      setTimeout(() => {
-        router.push('/auth');
-      }, 1000);
-
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      toast.error('An error occurred during logout, but you have been signed out.');
-      
-      setTimeout(() => {
-        router.push('/auth');
-      }, 1500);
-    } finally {
-      setIsLoggingOut(false);
+    } else {
+      console.warn('No active session found. Skipping Supabase signOut.');
     }
-  };
+
+    // ✅ Luego limpiar el localStorage
+    const keysToRemove = [
+      'hasSeenLocationPrompt',
+      'userLocation',
+      'userCoords',
+      'supabase.auth.token',
+      'sb-auth-token'
+    ];
+
+    keysToRemove.forEach((key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        console.warn(`Failed to remove ${key} from localStorage:`, error);
+      }
+    });
+
+    // Limpiar sessionStorage
+    try {
+      sessionStorage.clear();
+    } catch (error) {
+      console.warn('Failed to clear sessionStorage:', error);
+    }
+
+    // Redirigir luego de mostrar toast
+    setTimeout(() => {
+      router.push('/auth');
+    }, 1000);
+
+  } catch (error: any) {
+    console.error('Logout error:', error);
+    toast.error('An error occurred during logout, but you have been signed out.');
+
+    setTimeout(() => {
+      router.push('/auth');
+    }, 1500);
+  } finally {
+    setIsLoggingOut(false);
+  }
+};
 
   const deleteScan = async (scanId: string) => {
     try {
