@@ -93,19 +93,21 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="MuseAI" />
       </head>
       <body className={inter.className}>
-        {/* 🟢 Mobile Bolt Badge Section */}
-        <div className="block sm:hidden bg-gradient-to-br from-slate-900 to-slate-800 py-6 flex items-center justify-center">
-          <BoltBadge variant="static" />
-        </div>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 relative">
+          {/* 🟢 Static badge in mobile, visible only in mobile */}
+          <div className="absolute top-4 right-4 sm:hidden z-30">
+            <BoltBadge variant="static" />
+          </div>
 
-        {/* 🟢 App Content with mobile top padding */}
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 pt-4 sm:pt-0 relative z-0">
-          {children}
-        </div>
+          {/* 🟢 Children content */}
+          <div className="relative z-10">
+            {children}
+          </div>
 
-        {/* 🟢 Desktop-only floating Bolt Badge */}
-        <div className="hidden sm:block">
-          <BoltBadge variant="fixed" />
+          {/* 🟢 Floating badge only visible in desktop */}
+          <div className="hidden sm:block">
+            <BoltBadge variant="fixed" />
+          </div>
         </div>
 
         <Toaster />
