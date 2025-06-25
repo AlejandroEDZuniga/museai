@@ -62,7 +62,6 @@ export default function ResultPage() {
   >(null);
   const voiceSectionRef = useRef<HTMLDivElement | null>(null);
 
-
   // New message notification
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [lastChatCount, setLastChatCount] = useState(0);
@@ -1501,7 +1500,7 @@ export default function ResultPage() {
                 {/* Chat Input */}
                 <div className="space-y-4">
                   {/* Text Input */}
-                  <div className="flex space-x-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
                     <input
                       type="text"
                       value={chatMessage}
@@ -1510,7 +1509,7 @@ export default function ResultPage() {
                       disabled={
                         isChatLoading || isLoggingOut || voiceConversationActive
                       }
-                      className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent disabled:opacity-50 transition-all duration-200"
+                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent disabled:opacity-50 transition-all duration-200"
                       onKeyPress={(e) => {
                         if (
                           e.key === "Enter" &&
@@ -1527,6 +1526,7 @@ export default function ResultPage() {
                     <motion.div
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      className="w-full sm:w-auto"
                     >
                       <Button
                         onClick={() => handleChatSubmit(chatMessage)}
@@ -1536,7 +1536,7 @@ export default function ResultPage() {
                           isLoggingOut ||
                           voiceConversationActive
                         }
-                        className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                        className="w-full sm:w-auto text-white px-4 py-3 sm:px-6 sm:py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         {isChatLoading ? (
                           <Loader2 className="animate-spin h-4 w-4" />
