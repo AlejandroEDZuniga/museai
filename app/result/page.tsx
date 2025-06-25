@@ -419,8 +419,112 @@ export default function ResultPage() {
   //   }
   // };
 
+  // const handleChatSubmit = async (
+  //   message: string,
+  //   isVoice: boolean = false
+  // ) => {
+  //   if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
 
-  const handleChatSubmit = async (message: string, isVoice: boolean = false) => {
+  //   setIsChatLoading(true);
+
+  //   try {
+  //     const {
+  //       data: { session },
+  //       error: sessionError,
+  //     } = await supabase.auth.getSession();
+
+  //     if (sessionError || !session?.access_token) {
+  //       throw new Error("Authentication required");
+  //     }
+
+  //     // 1. Enviar mensaje al endpoint /api/chat
+  //     const response = await fetch("/api/chat", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${session.access_token}`,
+  //       },
+  //       body: JSON.stringify({
+  //         scanId: scan.id,
+  //         message,
+  //         language: scan.language,
+  //       }),
+  //     });
+
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.error || "Chat request failed");
+  //     }
+
+  //     const result = await response.json();
+
+  //     // 2. Agregar mensaje de respuesta al chatHistory
+  //     const newMessage = {
+  //       id: result.id,
+  //       message: result.message,
+  //       response: result.response,
+  //       created_at: result.createdAt,
+  //       audio_url: null,
+  //     };
+
+  //     setChatHistory((prev) => [...prev, newMessage]);
+
+  //     // 3. Mostrar animación "Generating audio..."
+  //     setGeneratingChatAudioId(result.id);
+
+  //     // 4. Generar el audio en segundo plano
+  //     fetch("/api/chat-generate-audio", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${session.access_token}`,
+  //       },
+  //       body: JSON.stringify({
+  //         chatId: result.id,
+  //         text: result.response,
+  //         language: scan.language,
+  //       }),
+  //     })
+  //       .then(async (res) => {
+  //         if (!res.ok) {
+  //           const errorData = await res.json();
+  //           throw new Error(errorData.error || "Audio generation failed");
+  //         }
+  //         const data = await res.json();
+
+  //         console.log("✅ Audio URL generado:", data.audioUrl);
+
+  //         // 5. Actualizar el chatHistory con el audio_url generado
+  //         setChatHistory((prev) =>
+  //           prev.map((chat) =>
+  //             chat.id === result.id
+  //               ? { ...chat, audio_url: data.audioUrl }
+  //               : chat
+  //           )
+  //         );
+  //       })
+  //       .catch((err) => {
+  //         console.error("⚠️ Error generating chat audio:", err);
+  //       })
+  //       .finally(() => {
+  //         setGeneratingChatAudioId(null);
+  //       });
+
+  //     // 6. Limpiar input
+  //     setChatMessage("");
+  //     toast.success(isVoice ? "Voice message sent!" : "Message sent!");
+  //   } catch (error: any) {
+  //     console.error("❌ Chat error:", error);
+  //     toast.error(error.message || "Failed to send message. Please try again.");
+  //   } finally {
+  //     setIsChatLoading(false);
+  //   }
+  // };
+
+  const handleChatSubmit = async (
+  message: string,
+  isVoice: boolean = false
+) => {
   if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
 
   setIsChatLoading(true);
@@ -456,13 +560,13 @@ export default function ResultPage() {
 
     const result = await response.json();
 
-    // 2. Agregar mensaje de respuesta al chatHistory
+    // 2. Agregar mensaje al chatHistory sin audio todavía
     const newMessage = {
       id: result.id,
       message: result.message,
       response: result.response,
       created_at: result.createdAt,
-      audio_url: null,
+      audio_url: undefined, // <-- mejor que null
     };
 
     setChatHistory((prev) => [...prev, newMessage]);
@@ -470,7 +574,7 @@ export default function ResultPage() {
     // 3. Mostrar animación "Generating audio..."
     setGeneratingChatAudioId(result.id);
 
-    // 4. Generar el audio en segundo plano
+    // 4. Generar audio en segundo plano
     fetch("/api/chat-generate-audio", {
       method: "POST",
       headers: {
@@ -488,28 +592,35 @@ export default function ResultPage() {
           const errorData = await res.json();
           throw new Error(errorData.error || "Audio generation failed");
         }
-        const data = await res.json();
 
+        const data = await res.json();
         console.log("✅ Audio URL generado:", data.audioUrl);
 
-        // 5. Actualizar el chatHistory con el audio_url generado
-        setChatHistory((prev) =>
-          prev.map((chat) =>
-            chat.id === result.id ? { ...chat, audio_url: data.audioUrl } : chat
-          )
-        );
+        // 5. Actualizar el mensaje con el audio_url
+        setChatHistory((prev) => {
+          const updated = prev.map((chat) =>
+            chat.id === result.id
+              ? { ...chat, audio_url: data.audioUrl }
+              : chat
+          );
+          return [...updated]; // fuerza rerender
+        });
+
+        // 6. Retirar animación después de que se actualice el estado
+        setTimeout(() => {
+          setGeneratingChatAudioId(null);
+        }, 100); // delay mínimo para evitar condiciones de carrera
       })
       .catch((err) => {
         console.error("⚠️ Error generating chat audio:", err);
-      })
-      .finally(() => {
-        setGeneratingChatAudioId(null);
+        toast.error("Failed to generate audio response.");
+        setGeneratingChatAudioId(null); // fallback para no dejar spinner colgado
       });
 
-    // 6. Limpiar input
+    // 7. Limpiar input
     setChatMessage("");
-    toast.success(isVoice ? "Voice message sent!" : "Message sent!");
 
+    toast.success(isVoice ? "Voice message sent!" : "Message sent!");
   } catch (error: any) {
     console.error("❌ Chat error:", error);
     toast.error(error.message || "Failed to send message. Please try again.");
@@ -1518,12 +1629,14 @@ export default function ResultPage() {
                             </div>
                           </div>
 
+                       
                           {/* AI Response */}
                           <div className="flex justify-start">
                             <div
                               className="bg-slate-800/80 backdrop-blur-sm border border-emerald-400/30 p-4 rounded-2xl rounded-bl-md max-w-xs sm:max-w-md shadow-sm"
                               data-ai-response
                             >
+                              {/* Header */}
                               <div className="flex items-start space-x-2 mb-2">
                                 <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-1 rounded-full">
                                   <Zap className="h-3 w-3 text-white" />
@@ -1533,10 +1646,14 @@ export default function ResultPage() {
                                 </span>
                               </div>
 
+                              {/* Response Text */}
                               <p className="text-sm text-white leading-relaxed mb-3 font-medium">
                                 {chat.response}
                               </p>
-                              {generatingChatAudioId === chat.id && (
+
+                              {/* Audio State Handling */}
+                              {generatingChatAudioId === chat.id ? (
+                                // AUDIO IS STILL GENERATING
                                 <motion.div
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
@@ -1554,7 +1671,7 @@ export default function ResultPage() {
                                       </span>
                                     </Button>
 
-                                    {/* Efecto pulsante */}
+                                    {/* Pulse effect */}
                                     <motion.div
                                       className="absolute inset-0 rounded-full bg-emerald-500/20 blur-md"
                                       animate={{
@@ -1569,10 +1686,9 @@ export default function ResultPage() {
                                     />
                                   </div>
                                 </motion.div>
-                              )}
-
-                              {chat.audio_url && (
-                                <div className="flex items-center space-x-2">
+                              ) : chat.audio_url ? (
+                                // AUDIO IS READY
+                                <div className="flex items-center space-x-2 mt-4">
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -1604,7 +1720,7 @@ export default function ResultPage() {
                                       </div>
                                     )}
                                 </div>
-                              )}
+                              ) : null}
                             </div>
                           </div>
                         </motion.div>
