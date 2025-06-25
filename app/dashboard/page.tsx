@@ -70,7 +70,6 @@ const handleSignOut = async () => {
   setIsLoggingOut(true);
 
   try {
-    // ✅ Primero, verificar si hay sesión activa antes de signOut
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
@@ -85,7 +84,6 @@ const handleSignOut = async () => {
       console.warn('No active session found. Skipping Supabase signOut.');
     }
 
-    // ✅ Luego limpiar localStorage
     const keysToRemove = [
       'hasSeenLocationPrompt',
       'userLocation',
@@ -102,18 +100,15 @@ const handleSignOut = async () => {
       }
     });
 
-    // Limpiar sessionStorage
     try {
       sessionStorage.clear();
     } catch (error) {
       console.warn('Failed to clear sessionStorage:', error);
     }
 
-    // Limpieza de estado local
     setUser?.(null);
     setRecentScans?.([]);
 
-    // Delay para mostrar el toast antes de redirigir
     setTimeout(() => {
       router.push('/auth');
     }, 1000);

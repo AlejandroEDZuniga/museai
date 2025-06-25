@@ -22,7 +22,6 @@ import {
   Mic,
   MicOff,
   Square,
-  VolumeX,
   Bell,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -40,7 +39,6 @@ import Image from "next/image";
 export default function ResultPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // const scanId = searchParams.get('scanId');
   const scanId = searchParams?.get("scanId") ?? "";
 
   const [scan, setScan] = useState<any>(null);
@@ -173,7 +171,6 @@ export default function ResultPage() {
   }, [cleanupAudio]);
 
   useEffect(() => {
-    // Si hay audio nuevo en el historial, refrescamos
     if (chatHistory.some((chat) => chat.audio_url)) {
       setChatHistory([...chatHistory]);
     }
@@ -218,11 +215,9 @@ export default function ResultPage() {
     setIsLoggingOut(true);
 
     try {
-      // ✅ Primero detener audio o grabaciones activas
       cleanupAudio?.();
       stopVoiceRecording?.();
 
-      // ✅ Verificar si hay sesión activa antes del signOut
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -259,14 +254,12 @@ export default function ResultPage() {
         }
       });
 
-      // Limpiar sessionStorage
       try {
         sessionStorage.clear();
       } catch (error) {
         console.warn("Failed to clear sessionStorage:", error);
       }
 
-      // ✅ Redirigir con pequeño delay para mostrar toast
       setTimeout(() => {
         router.push("/auth");
       }, 1000);
@@ -313,7 +306,6 @@ export default function ResultPage() {
         throw new Error("Authentication required");
       }
 
-      // 1. Enviar mensaje al endpoint /api/chat
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -334,21 +326,18 @@ export default function ResultPage() {
 
       const result = await response.json();
 
-      // 2. Agregar mensaje al chatHistory sin audio todavía
       const newMessage = {
         id: result.id,
         message: result.message,
         response: result.response,
         created_at: result.createdAt,
-        audio_url: undefined, // <-- mejor que null
+        audio_url: undefined, 
       };
 
       setChatHistory((prev) => [...prev, newMessage]);
 
-      // 3. Mostrar animación "Generating audio..."
       setGeneratingChatAudioId(result.id);
 
-      // 4. Generar audio en segundo plano
       fetch("/api/chat-generate-audio", {
         method: "POST",
         headers: {
@@ -369,28 +358,25 @@ export default function ResultPage() {
 
           const data = await res.json();
 
-          // 5. Actualizar el mensaje con el audio_url
           setChatHistory((prev) => {
             const updated = prev.map((chat) =>
               chat.id === result.id
                 ? { ...chat, audio_url: data.audioUrl }
                 : chat
             );
-            return [...updated]; // fuerza rerender
+            return [...updated]; 
           });
 
-          // 6. Retirar animación después de que se actualice el estado
           setTimeout(() => {
             setGeneratingChatAudioId(null);
-          }, 100); // delay mínimo para evitar condiciones de carrera
+          }, 100); 
         })
         .catch((err) => {
           console.error("⚠️ Error generating chat audio:", err);
           toast.error("Failed to generate audio response.");
-          setGeneratingChatAudioId(null); // fallback para no dejar spinner colgado
+          setGeneratingChatAudioId(null); // fallback 
         });
 
-      // 7. Limpiar input
       setChatMessage("");
 
       toast.success(isVoice ? "Voice message sent!" : "Message sent!");
@@ -1127,58 +1113,6 @@ export default function ResultPage() {
                     </div>
 
                     {/* Listen to Description Button */}
-                    {/* {scan.audio_url && (
-                      <div className="mt-6 pt-4 border-t border-white/20">
-                        <div className="flex items-center justify-between">
-                          <motion.div
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <Button
-                              onClick={handlePlayDescription}
-                              disabled={isLoggingOut}
-                              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-                            >
-                              {currentTrack?.type === "description" &&
-                              isPlaying ? (
-                                <>
-                                  <Pause className="h-4 w-4 mr-2" />
-                                  Pause
-                                </>
-                              ) : (
-                                <>
-                                  <Volume2 className="h-4 w-4 mr-2" />
-                                  Listen
-                                </>
-                              )}
-                            </Button>
-                          </motion.div>
-
-                          {currentTrack?.type === "description" &&
-                            isPlaying && (
-                              <motion.div
-                                className="flex items-center space-x-2 text-sm text-emerald-400"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20 }}
-                              >
-                                <VoiceWaveAnimation
-                                  isListening={true}
-                                  isProcessing={false}
-                                  className="h-4"
-                                />
-                                <span className="font-medium">
-                                  Playing description...
-                                </span>
-                              </motion.div>
-                            )}
-                        </div>
-
-                        <p className="text-xs text-gray-400 mt-2">
-                          Listen to an AI-narrated description of this artwork
-                        </p>
-                      </div>
-                    )} */}
 
                     <div className="mt-6 pt-4 border-t border-white/20">
                       <div className="flex items-center justify-between">

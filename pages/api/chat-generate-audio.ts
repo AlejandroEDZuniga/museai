@@ -1,4 +1,3 @@
-// /pages/api/chat-generate-audio.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@/lib/server';
 import { generateSpeech } from '@/lib/elevenlabs';

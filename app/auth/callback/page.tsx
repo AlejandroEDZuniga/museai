@@ -1,34 +1,35 @@
-// app/auth/callback/page.tsx
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { toast } from 'sonner'
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export default function CallbackPage() {
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
     const exchangeSession = async () => {
-      const { error } = await supabase.auth.exchangeCodeForSession(window.location.hash)
+      const { error } = await supabase.auth.exchangeCodeForSession(
+        window.location.hash
+      );
 
       if (error) {
-        console.error('Error intercambiando sesión:', error)
-        toast.error('El enlace ha expirado o no es válido')
-        router.push('/auth')
+        console.error("Error exchanging session:", error);
+        toast.error("The link has expired or is invalid");
+        router.push("/auth");
       } else {
-        toast.success('¡Sesión iniciada exitosamente!')
-        router.push('/dashboard')
+        toast.success("Successfully signed in!");
+        router.push("/dashboard");
       }
-    }
+    };
 
-    exchangeSession()
-  }, [])
+    exchangeSession();
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center text-white">
-      Validando tu sesión...
+      Validating your session...
     </div>
-  )
+  );
 }

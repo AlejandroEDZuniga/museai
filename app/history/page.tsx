@@ -67,7 +67,6 @@ const handleSignOut = async () => {
   setIsLoggingOut(true);
 
   try {
-    // ✅ Verificar si hay sesión activa antes de llamar signOut
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
@@ -82,7 +81,6 @@ const handleSignOut = async () => {
       console.warn('No active session found. Skipping Supabase signOut.');
     }
 
-    // ✅ Luego limpiar el localStorage
     const keysToRemove = [
       'hasSeenLocationPrompt',
       'userLocation',
@@ -99,14 +97,12 @@ const handleSignOut = async () => {
       }
     });
 
-    // Limpiar sessionStorage
     try {
       sessionStorage.clear();
     } catch (error) {
       console.warn('Failed to clear sessionStorage:', error);
     }
 
-    // Redirigir luego de mostrar toast
     setTimeout(() => {
       router.push('/auth');
     }, 1000);
@@ -270,20 +266,7 @@ const handleSignOut = async () => {
                       className="w-full h-48 object-cover rounded-t-lg"
                     />
                     <div className="absolute top-2 right-2 flex space-x-1">
-                      {scan.audio_url && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={isLoggingOut}
-                          className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isLoggingOut) playAudio(scan.audio_url);
-                          }}
-                        >
-                          <Play className="h-3 w-3" />
-                        </Button>
-                      )}
+                   
                       <Button
                         size="sm"
                         variant="destructive"

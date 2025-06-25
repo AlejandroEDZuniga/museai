@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Camera, Mail, Lock, User, ArrowLeft, Sparkles, Palette, Brain, Globe, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft, Sparkles, Palette, Brain, Globe, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, easeInOut } from 'framer-motion';
 import Particles from 'react-tsparticles';
@@ -85,7 +85,6 @@ export default function AuthPage() {
         });
 
         if (error) {
-          // Handle specific auth errors
           if (error.message.includes('Invalid login credentials')) {
             toast.error('Invalid email or password. Please check your credentials and try again.');
           } else if (error.message.includes('Email not confirmed')) {
@@ -100,13 +99,11 @@ export default function AuthPage() {
 
         if (data.user) {
           toast.success('Welcome back! Redirecting to your dashboard...');
-          // Small delay to show the success message
           setTimeout(() => {
             router.push('/dashboard');
           }, 1000);
         }
       } else {
-        // Manual registration with email confirmation
         const { data, error } = await supabase.auth.signUp({
           email: formData.email.trim(),
           password: formData.password,
@@ -121,7 +118,6 @@ export default function AuthPage() {
         });
 
         if (error) {
-          // Handle specific signup errors
           if (error.message.includes('User already registered')) {
             toast.error('An account with this email already exists. Please sign in instead.');
           } else if (error.message.includes('Password should be at least')) {
@@ -138,7 +134,6 @@ export default function AuthPage() {
 
         if (data.user) {
           if (!data.session) {
-            // Email confirmation required
             toast.success('Account created successfully! Please check your email and click the confirmation link to activate your account.', {
               duration: 8000,
               style: {
@@ -148,14 +143,12 @@ export default function AuthPage() {
               }
             });
             
-            // Show additional instructions
             setTimeout(() => {
               toast.info('Check your spam folder if you don\'t see the confirmation email within a few minutes.', {
                 duration: 6000
               });
             }, 2000);
           } else {
-            // Auto-confirmed (shouldn't happen with email confirmation enabled)
             toast.success('Account created successfully! Redirecting to your dashboard...');
             setTimeout(() => {
               router.push('/dashboard');

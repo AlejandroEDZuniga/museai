@@ -21,37 +21,37 @@ export default function ZoomParallaxSection() {
     {
       src: "/images/art3.jpg?height=400&width=600",
       scale: scale4,
-      className: "w-[25vw] h-[25vh]", // Imagen 1 - centro
+      className: "w-[25vw] h-[25vh]", 
     },
     {
       src: "/images/art2.jpg?height=480&width=700",
       scale: scale5,
-      className: "w-[35vw] h-[30vh] -top-[30vh] left-[5vw]", // Imagen 2 - superior derecha grande
+      className: "w-[35vw] h-[30vh] -top-[30vh] left-[5vw]",
     },
     {
       src: "/images/art7.jpg?height=720&width=400",
       scale: scale6,
-      className: "w-[20vw] h-[45vh] -top-[10vh] -left-[25vw]", // Imagen 3 - superior izquierda
+      className: "w-[20vw] h-[45vh] -top-[10vh] -left-[25vw]", 
     },
     {
       src: "/images/art4.jpg?height=400&width=600",
       scale: scale5,
-      className: "w-[25vw] h-[25vh] left-[27.5vw]", // Imagen 4 - centro derecha
+      className: "w-[25vw] h-[25vh] left-[27.5vw]", 
     },
     {
       src: "/images/art5.jpg?height=820&width=480",
       scale: scale6,
-      className: "w-[20vw] h-[45vh] top-[37.5vh] left-[5vw]", // Imagen 5 - inferior centro
+      className: "w-[20vw] h-[45vh] top-[37.5vh] left-[5vw]", 
     },
     {
       src: "/images/art6.jpg?height=400&width=720",
       scale: scale8,
-      className: "w-[30vw] h-[25vh] top-[27.5vh] -left-[22.5vw]", // Imagen 6 - inferior izquierda
+      className: "w-[30vw] h-[25vh] top-[27.5vh] -left-[22.5vw]", 
     },
     {
       src: "/images/art1.jpg?height=820&width=400",
       scale: scale9,
-      className: "w-[15vw] h-[45vh] top-[38.5vh] left-[25vw]", // Imagen 7 - pequeña inferior derecha
+      className: "w-[15vw] h-[45vh] top-[38.5vh] left-[25vw]", 
     },
   ];
 

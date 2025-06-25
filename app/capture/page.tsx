@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Camera, Upload, ArrowLeft, Loader2, AlertCircle, LogOut, Sparkles, RefreshCw, X, CheckCircle, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/utils';
@@ -61,7 +61,6 @@ const handleSignOut = async () => {
     // Stop camera if active
     stopCamera?.();
 
-    // ✅ Verificar si hay sesión antes de hacer signOut
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
@@ -76,7 +75,6 @@ const handleSignOut = async () => {
       console.warn("No active session found. Skipping Supabase signOut.");
     }
 
-    // ✅ Limpiar localStorage y sessionStorage después del signOut
     const keysToRemove = [
       'hasSeenLocationPrompt',
       'userLocation',
@@ -102,7 +100,6 @@ const handleSignOut = async () => {
     // Clear user state
     setUser?.(null);
 
-    // Redirigir después de un breve delay
     setTimeout(() => {
       router.push('/auth');
     }, 1000);
@@ -272,7 +269,6 @@ const handleSignOut = async () => {
 
     const base64Data = capturedImage.split(',')[1];
 
-    // 1. Llamada al endpoint de análisis
     const response = await fetch('/api/describe', {
       method: 'POST',
       headers: {
@@ -293,7 +289,6 @@ const handleSignOut = async () => {
 
     const result = await response.json();
 
-    // 2. Llamada en segundo plano al endpoint de generación de audio
     fetch('/api/generate-audio', {
       method: 'POST',
       headers: {
@@ -309,7 +304,6 @@ const handleSignOut = async () => {
       console.error('⚠️ Error generating audio:', err);
     });
 
-    // 3. Redireccionar inmediatamente al resultado
     toast.success('Analysis complete! Redirecting to results...');
 
     setTimeout(() => {
