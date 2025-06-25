@@ -12,7 +12,6 @@ import Particles from 'react-tsparticles';
 import { loadSlim } from 'tsparticles-slim';
 import type { Engine } from 'tsparticles-engine';
 import Image from 'next/image';
-import BoltBadge from '@/components/BoltBadge';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -326,9 +325,6 @@ export default function Dashboard() {
                   <LogOut className="h-4 w-4" />
                 )}
               </Button>
-
-                {/* Bolt badge inline in header */}
-              <BoltBadge variant="inline" />
              
             </div>
           </div>
