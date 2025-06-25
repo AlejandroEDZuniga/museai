@@ -57,6 +57,9 @@ export default function ResultPage() {
   const [isListening, setIsListening] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [voiceConversationActive, setVoiceConversationActive] = useState(false);
+  const [generatingChatAudioId, setGeneratingChatAudioId] = useState<
+    string | null
+  >(null);
 
   // New message notification
   const [hasNewMessage, setHasNewMessage] = useState(false);
@@ -276,6 +279,63 @@ export default function ResultPage() {
     playAudio(responseTrack);
   };
 
+  // const handleChatSubmit = async (
+  //   message: string,
+  //   isVoice: boolean = false
+  // ) => {
+  //   if (!message.trim() || !scan || isChatLoading || isLoggingOut) return;
+
+  //   setIsChatLoading(true);
+
+  //   try {
+  //     const {
+  //       data: { session },
+  //       error: sessionError,
+  //     } = await supabase.auth.getSession();
+
+  //     if (sessionError || !session?.access_token) {
+  //       throw new Error("Authentication required");
+  //     }
+
+  //     const response = await fetch("/api/chat", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${session.access_token}`,
+  //       },
+  //       body: JSON.stringify({
+  //         scanId: scan.id,
+  //         message: message,
+  //         language: scan.language,
+  //       }),
+  //     });
+
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.error || "Chat request failed");
+  //     }
+
+  //     const result = await response.json();
+
+  //     await fetchChatHistory();
+  //     setChatMessage("");
+
+  //     // If voice mode and response has audio, play it automatically
+  //     if (isVoice && result.audioUrl && voiceConversationActive) {
+  //       setTimeout(() => {
+  //         playResponseAudio(result.audioUrl, result.response);
+  //       }, 500);
+  //     }
+
+  //     toast.success(isVoice ? "Voice message sent!" : "Message sent!");
+  //   } catch (error: any) {
+  //     console.error("Chat error:", error);
+  //     toast.error(error.message || "Failed to send message. Please try again.");
+  //   } finally {
+  //     setIsChatLoading(false);
+  //   }
+  // };
+
   const handleChatSubmit = async (
     message: string,
     isVoice: boolean = false
@@ -294,6 +354,7 @@ export default function ResultPage() {
         throw new Error("Authentication required");
       }
 
+      // Enviar mensaje y obtener respuesta AI
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -302,7 +363,7 @@ export default function ResultPage() {
         },
         body: JSON.stringify({
           scanId: scan.id,
-          message: message,
+          message,
           language: scan.language,
         }),
       });
@@ -314,19 +375,37 @@ export default function ResultPage() {
 
       const result = await response.json();
 
+      // Activar animación de generación de audio
+      setGeneratingChatAudioId(result.id);
+
+      // Llamar al endpoint que genera el audio (en segundo plano)
+      fetch("/api/chat-generate-audio", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          chatId: result.id,
+          text: result.response,
+          language: scan.language,
+        }),
+      })
+        .catch((err) => {
+          console.error("⚠️ Error generating chat audio:", err);
+        })
+        .finally(() => {
+          // Desactivar animación una vez que termine
+          setGeneratingChatAudioId(null);
+        });
+
+      // Actualizar chat
       await fetchChatHistory();
       setChatMessage("");
 
-      // If voice mode and response has audio, play it automatically
-      if (isVoice && result.audioUrl && voiceConversationActive) {
-        setTimeout(() => {
-          playResponseAudio(result.audioUrl, result.response);
-        }, 500);
-      }
-
       toast.success(isVoice ? "Voice message sent!" : "Message sent!");
     } catch (error: any) {
-      console.error("Chat error:", error);
+      console.error("❌ Chat error:", error);
       toast.error(error.message || "Failed to send message. Please try again.");
     } finally {
       setIsChatLoading(false);
@@ -1350,6 +1429,35 @@ export default function ResultPage() {
                               <p className="text-sm text-white leading-relaxed mb-3 font-medium">
                                 {chat.response}
                               </p>
+                              {generatingChatAudioId === chat.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.95 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  transition={{
+                                    duration: 0.3,
+                                    ease: "easeInOut",
+                                  }}
+                                  className="flex justify-start w-full mt-2"
+                                >
+                                  <div className="relative bg-slate-800/80 backdrop-blur-sm border border-yellow-500/30 px-5 py-3 rounded-2xl rounded-bl-md max-w-xs sm:max-w-md shadow-md">
+                                    <div className="flex items-center space-x-2">
+                                      <Loader2 className="h-4 w-4 animate-spin text-yellow-400" />
+                                      <span className="text-sm text-yellow-300 font-medium">
+                                        Generating voice response...
+                                      </span>
+                                    </div>
+
+                                    <motion.div
+                                      className="absolute -bottom-2 left-5 h-2 w-2 bg-yellow-400 rounded-full blur-sm animate-ping"
+                                      transition={{
+                                        repeat: Infinity,
+                                        duration: 1.2,
+                                      }}
+                                    />
+                                  </div>
+                                </motion.div>
+                              )}
 
                               {chat.audio_url && (
                                 <div className="flex items-center space-x-2">
