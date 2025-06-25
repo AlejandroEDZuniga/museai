@@ -160,7 +160,7 @@ const logoVariants = {
         {/* Hero Content */}
         {/* <main className="flex-1 flex flex-col justify-center text-center px-4 sm:px-6 py-12 sm:py-16 max-w-6xl mx-auto w-full"> */}
           {/* Title */}
-          <main className="flex-1 flex flex-col justify-center text-center px-4 sm:px-16 py-8 sm:pt-16 max-w-6xl mx-auto w-full">
+        <main className="flex-1 flex flex-col justify-center text-center px-4 sm:px-16 pt-28 sm:pt-16 pb-12 max-w-6xl mx-auto w-full">
 
           <motion.h1 
             className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-8 sm:mb-10"
