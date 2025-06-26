@@ -89,25 +89,39 @@ export async function chatWithAI(
   language: string = 'en'
 ): Promise<string> {
   try {
+    const shortContext = context.slice(0, 1500);
+
+    const systemPrompt = `
+You are an expert art historian and museum guide.
+Answer user questions about artworks using the provided context.
+Respond with:
+- Maximum 3 sentences
+- Under 450 characters
+- Clear, elegant, and natural language
+- Suitable for spoken narration (avoid complex or technical vocabulary)
+`.trim();
+
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: 'gpt-4o',
       messages: [
         {
-          role: "system",
-          content: "You are a knowledgeable art historian. Answer questions about the artwork context provided in a conversational and engaging manner."
+          role: 'system',
+          content: systemPrompt,
         },
         {
-          role: "user",
-          content: `Context: ${context}\n\nQuestion: ${message}`
-        }
+          role: 'user',
+          content: `Context:\n${shortContext}\n\nQuestion:\n${message}`,
+        },
       ],
-      max_tokens: 500,
-      temperature: 0.7
-    })
+      max_tokens: 350,
+      temperature: 0.6,
+    });
 
-    return response.choices[0]?.message?.content || "I'm sorry, I'm unable to provide an answer at the moment. Please try again later."
+    const content = response.choices[0]?.message?.content?.trim() || '';
+
+    return content || "I'm sorry, I couldn't generate a response at the moment.";
   } catch (error) {
-    console.error('OpenAI Chat API error:', error)
-    return "I'm sorry, I'm unable to provide an answer at the moment. Please try again later."
+    console.error('OpenAI Chat API error:', error);
+    return "I'm sorry, I couldn't generate a response at the moment.";
   }
 }

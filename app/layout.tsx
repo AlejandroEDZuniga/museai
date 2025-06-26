@@ -1,26 +1,25 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import { Toaster } from '@/components/ui/sonner';
-import BoltBadge from '@/components/BoltBadge';
+import "./globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
+import BoltBadge from "@/components/BoltBadge";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'MuseAI - AI-Powered Art Discovery',
-  description: 'Discover and learn about artworks with AI-powered analysis, audio narration, and interactive conversations.',
-  manifest: '/manifest.json',
-  themeColor: '#1e3a8a',
-  viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
+  title: "MuseAI - AI-Powered Art Discovery",
+  description:
+    "Discover and learn about artworks with AI-powered analysis, audio narration, and interactive conversations.",
+  manifest: "/manifest.json",
+  themeColor: "#1e3a8a",
+  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
   icons: {
-    icon: [
-      { url: '/images/LogoMuseAI.png', sizes: 'any', type: 'image/png' }
-    ],
+    icon: [{ url: "/images/LogoMuseAI.png", sizes: "any", type: "image/png" }],
     apple: [
-      { url: '/images/LogoMuseAI.png', sizes: '180x180', type: 'image/png' }
+      { url: "/images/LogoMuseAI.png", sizes: "180x180", type: "image/png" },
     ],
-    shortcut: '/images/LogoMuseAI.png'
-  }
+    shortcut: "/images/LogoMuseAI.png",
+  },
 };
 
 export default function RootLayout({
@@ -37,14 +36,14 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="MuseAI" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} w-full overflow-x-hidden`}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
           {children}
         </div>
-        
+
         {/* Bolt.new Badge - Global across all pages */}
         <BoltBadge />
-        
+
         <Toaster />
       </body>
     </html>
