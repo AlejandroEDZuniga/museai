@@ -29,12 +29,11 @@ export function useAudioManager(): UseAudioManagerReturn {
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const isStoppedManuallyRef = useRef(false); // Track if user manually stopped
+  const isStoppedManuallyRef = useRef(false);
 
-  // Update progress
   const updateProgress = useCallback(() => {
     if (audioRef.current) {
       setProgress(audioRef.current.currentTime);
@@ -42,7 +41,6 @@ export function useAudioManager(): UseAudioManagerReturn {
     }
   }, []);
 
-  // Start progress tracking
   const startProgressTracking = useCallback(() => {
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
@@ -50,7 +48,6 @@ export function useAudioManager(): UseAudioManagerReturn {
     progressIntervalRef.current = setInterval(updateProgress, 100);
   }, [updateProgress]);
 
-  // Stop progress tracking
   const stopProgressTracking = useCallback(() => {
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
@@ -58,21 +55,20 @@ export function useAudioManager(): UseAudioManagerReturn {
     }
   }, []);
 
-  // Play audio
   const playAudio = useCallback(async (track: AudioTrack) => {
     try {
-      // Reset manual stop flag when starting new audio
       isStoppedManuallyRef.current = false;
-      
-      // Stop any existing audio
+
+      // Stop and reset previous audio if any
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        // Remove old event listeners
-        audioRef.current.removeEventListener('ended', () => {});
-        audioRef.current.removeEventListener('error', () => {});
-        audioRef.current.removeEventListener('play', () => {});
-        audioRef.current.removeEventListener('pause', () => {});
+        audioRef.current.src = '';
+        audioRef.current.load(); // reset
+        audioRef.current = null;
+
+        // Small delay to avoid AbortError from racing calls
+        await new Promise((resolve) => setTimeout(resolve, 20));
       }
 
       // Create new audio instance
@@ -80,13 +76,9 @@ export function useAudioManager(): UseAudioManagerReturn {
       audioRef.current = audio;
       setCurrentTrack(track);
 
-      // Set up event listeners
-      const handleLoadedMetadata = () => {
-        setDuration(audio.duration);
-      };
-
+      // Event listeners
+      const handleLoadedMetadata = () => setDuration(audio.duration);
       const handleEnded = () => {
-        // Only clear state if not manually stopped
         if (!isStoppedManuallyRef.current) {
           setIsPlaying(false);
           setProgress(0);
@@ -94,19 +86,16 @@ export function useAudioManager(): UseAudioManagerReturn {
           setCurrentTrack(null);
         }
       };
-
       const handleError = (e: Event) => {
         console.error('Audio playback error:', e);
         setIsPlaying(false);
         setCurrentTrack(null);
         stopProgressTracking();
       };
-
       const handlePlay = () => {
         setIsPlaying(true);
         startProgressTracking();
       };
-
       const handlePause = () => {
         setIsPlaying(false);
         stopProgressTracking();
@@ -119,7 +108,6 @@ export function useAudioManager(): UseAudioManagerReturn {
       audio.addEventListener('play', handlePlay);
       audio.addEventListener('pause', handlePause);
 
-      // Start playback
       await audio.play();
     } catch (error) {
       console.error('Error playing audio:', error);
@@ -128,14 +116,12 @@ export function useAudioManager(): UseAudioManagerReturn {
     }
   }, [updateProgress, startProgressTracking, stopProgressTracking]);
 
-  // Pause audio
   const pauseAudio = useCallback(() => {
     if (audioRef.current && isPlaying) {
       audioRef.current.pause();
     }
   }, [isPlaying]);
 
-  // Resume audio
   const resumeAudio = useCallback(async () => {
     if (audioRef.current && !isPlaying) {
       try {
@@ -146,33 +132,24 @@ export function useAudioManager(): UseAudioManagerReturn {
     }
   }, [isPlaying]);
 
-  // Stop audio
   const stopAudio = useCallback(() => {
-    // Mark as manually stopped to prevent auto-restart
     isStoppedManuallyRef.current = true;
-    
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      
-      // Remove all event listeners to prevent any callbacks
-      audioRef.current.removeEventListener('ended', () => {});
-      audioRef.current.removeEventListener('error', () => {});
-      audioRef.current.removeEventListener('play', () => {});
-      audioRef.current.removeEventListener('pause', () => {});
       audioRef.current.removeEventListener('timeupdate', updateProgress);
-      
-      // Clear the audio reference
+      audioRef.current.src = '';
+      audioRef.current.load();
       audioRef.current = null;
     }
-    
+
     setIsPlaying(false);
     setProgress(0);
     setCurrentTrack(null);
     stopProgressTracking();
   }, [stopProgressTracking, updateProgress]);
 
-  // Toggle mute
   const toggleMute = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.muted = !audioRef.current.muted;
@@ -180,32 +157,25 @@ export function useAudioManager(): UseAudioManagerReturn {
     }
   }, []);
 
-  // Cleanup
   const cleanup = useCallback(() => {
-    isStoppedManuallyRef.current = true; // Prevent any restart
+    isStoppedManuallyRef.current = true;
     stopProgressTracking();
-    
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      
-      // Remove all event listeners
-      audioRef.current.removeEventListener('ended', () => {});
-      audioRef.current.removeEventListener('error', () => {});
-      audioRef.current.removeEventListener('play', () => {});
-      audioRef.current.removeEventListener('pause', () => {});
       audioRef.current.removeEventListener('timeupdate', updateProgress);
-      
+      audioRef.current.src = '';
+      audioRef.current.load();
       audioRef.current = null;
     }
-    
+
     setCurrentTrack(null);
     setIsPlaying(false);
     setProgress(0);
     setDuration(0);
   }, [stopProgressTracking, updateProgress]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return cleanup;
   }, [cleanup]);
@@ -221,6 +191,6 @@ export function useAudioManager(): UseAudioManagerReturn {
     resumeAudio,
     stopAudio,
     toggleMute,
-    cleanup
+    cleanup,
   };
 }
