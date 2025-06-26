@@ -146,6 +146,10 @@ create policy "Allow UPDATE if user_id matches auth uid"
   on public.scans for update
   using (auth.uid() = user_id);
 
+create policy "Allow DELETE if user_id matches auth uid"
+  on public.scans for delete
+  using (auth.uid() = user_id);
+
 -- CHAT_MESSAGES policies
 create policy "Allow INSERT if user_id matches auth uid"
   on public.chat_messages for insert
