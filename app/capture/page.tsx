@@ -13,6 +13,7 @@ import Particles from 'react-tsparticles';
 import { loadSlim } from 'tsparticles-slim';
 import type { Engine } from 'tsparticles-engine';
 import Image from 'next/image';
+import { handleGlobalSignOut } from '@/lib/auth/signOut';
 
 export default function CapturePage() {
   const router = useRouter();
@@ -52,70 +53,20 @@ export default function CapturePage() {
     }
   };
 
+
+
 const handleSignOut = async () => {
   if (isLoggingOut) return;
 
   setIsLoggingOut(true);
-
-  try {
-    // Stop camera if active
-    stopCamera?.();
-
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (session) {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Supabase signOut error:", error);
-        toast.error("There was an issue signing out, but you have been logged out locally.");
-      } else {
-        toast.success("Successfully signed out. See you next time!");
-      }
-    } else {
-      console.warn("No active session found. Skipping Supabase signOut.");
-    }
-
-    const keysToRemove = [
-      'hasSeenLocationPrompt',
-      'userLocation',
-      'userCoords',
-      'supabase.auth.token',
-      'sb-auth-token'
-    ];
-
-    keysToRemove.forEach((key) => {
-      try {
-        localStorage.removeItem(key);
-      } catch (error) {
-        console.warn(`Failed to remove ${key} from localStorage:`, error);
-      }
-    });
-
-    try {
-      sessionStorage.clear();
-    } catch (error) {
-      console.warn('Failed to clear sessionStorage:', error);
-    }
-
-    // Clear user state
-    setUser?.(null);
-
-    setTimeout(() => {
-      router.push('/auth');
-    }, 1000);
-
-  } catch (error: any) {
-    console.error("Logout error:", error);
-    toast.error("An error occurred during logout, but you have been signed out.");
-
-    setTimeout(() => {
-      router.push('/auth');
-    }, 1500);
-  } finally {
-    setIsLoggingOut(false);
-  }
+  await handleGlobalSignOut({
+    stopCamera,
+    router,
+    toast,
+    setUser
+  });
+  setIsLoggingOut(false);
 };
-
 
   const startCamera = async () => {
     try {

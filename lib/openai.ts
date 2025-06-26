@@ -10,7 +10,7 @@ export async function analyzeArtwork(
   language: string = 'en'
 ): Promise<{ title: string; description: string }> {
   try {
-    // const systemPrompt = `You are an expert art historian and museum guide. Analyze the artwork in the image and respond with:\nTitle: <title>\nDescription: <very short summary, up to 5 sentences, highlighting key historical facts and visual details>. ${location ? `The user is currently at: ${location}. Consider this context if relevant.` : ''}`
+
     const systemPrompt = `
     You are an expert art historian and museum guide. Analyze the artwork in the image and respond with:
     Title: <title>
